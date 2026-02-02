@@ -295,3 +295,46 @@ export async function getMoodleSyncStatus(windowId) {
     throw err;
   }
 }
+
+// Exam testing and reference solution endpoints
+export async function testExamSolution(examId, code, useReferenceSolution = false) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/exams/${examId}/test-solution`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ code, useReferenceSolution }),
+    });
+
+    return await handleResponse(res);
+  } catch (err) {
+    throw err;
+  }
+}
+
+export async function testSolutionPreview(code, language, testCases) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/exams/test-solution-preview`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ code, language, testCases }),
+    });
+
+    return await handleResponse(res);
+  } catch (err) {
+    throw err;
+  }
+}
+
+export async function saveReferenceSolution(examId, solucionReferencia) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/exams/${examId}/reference-solution`, {
+      method: "PUT",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ solucionReferencia }),
+    });
+
+    return await handleResponse(res);
+  } catch (err) {
+    throw err;
+  }
+}
