@@ -23,6 +23,7 @@ export default function ExamWindowResultsPage() {
   const [tipoRanking, setTipoRanking] = useState('puntaje');
   const [attempts, setAttempts] = useState([]);
   const [attemptsLoading, setAttemptsLoading] = useState(false);
+  const [attemptsLoaded, setAttemptsLoaded] = useState(false);
   const [selectedAttemptId, setSelectedAttemptId] = useState(null);
   const [showGradingModal, setShowGradingModal] = useState(false);
   const [modal, setModal] = useState({
@@ -128,20 +129,25 @@ export default function ExamWindowResultsPage() {
       if (response.ok) {
         const data = await response.json();
         setAttempts(data);
+      } else {
+        console.error('Error response:', response.status);
+        setAttempts([]);
       }
     } catch (err) {
       console.error('Error fetching attempts:', err);
+      setAttempts([]);
     } finally {
       setAttemptsLoading(false);
+      setAttemptsLoaded(true);
     }
   }, [windowId, token]);
 
   // Cargar intentos automáticamente
   useEffect(() => {
-    if (examWindow && !attemptsLoading && attempts.length === 0) {
+    if (examWindow && !attemptsLoading && !attemptsLoaded) {
       loadAttempts();
     }
-  }, [examWindow, attemptsLoading, attempts.length, loadAttempts]);
+  }, [examWindow, attemptsLoading, attemptsLoaded, loadAttempts]);
 
   const handleOpenGrading = (attemptId) => {
     setSelectedAttemptId(attemptId);
@@ -155,6 +161,7 @@ export default function ExamWindowResultsPage() {
 
   const handleSaveGrade = () => {
     // Recargar datos
+    setAttemptsLoaded(false);
     loadAttempts();
     loadRankingData();
   };
