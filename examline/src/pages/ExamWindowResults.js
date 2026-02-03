@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import BackToMainButton from '../components/BackToMainButton';
 import Modal from '../components/Modal';
 import MoodleIntegration from '../components/MoodleIntegration';
+import ManualGradingModal from '../components/ManualGradingModal';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '../modern-examline.css';
 
@@ -20,6 +21,10 @@ export default function ExamWindowResultsPage() {
   const [rankingData, setRankingData] = useState(null);
   const [rankingLoading, setRankingLoading] = useState(false);
   const [tipoRanking, setTipoRanking] = useState('puntaje');
+  const [attempts, setAttempts] = useState([]);
+  const [attemptsLoading, setAttemptsLoading] = useState(false);
+  const [selectedAttemptId, setSelectedAttemptId] = useState(null);
+  const [showGradingModal, setShowGradingModal] = useState(false);
   const [modal, setModal] = useState({
     show: false,
     type: 'info',
@@ -108,6 +113,51 @@ export default function ExamWindowResultsPage() {
       loadRankingData();
     }
   }, [examWindow, rankingData, rankingLoading, loadRankingData]);
+
+  // Cargar intentos de la ventana
+  const loadAttempts = useCallback(async () => {
+    try {
+      setAttemptsLoading(true);
+      const response = await fetch(`${API_BASE_URL}/exam-attempts/window/${windowId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAttempts(data);
+      }
+    } catch (err) {
+      console.error('Error fetching attempts:', err);
+    } finally {
+      setAttemptsLoading(false);
+    }
+  }, [windowId, token]);
+
+  // Cargar intentos automáticamente
+  useEffect(() => {
+    if (examWindow && !attemptsLoading && attempts.length === 0) {
+      loadAttempts();
+    }
+  }, [examWindow, attemptsLoading, attempts.length, loadAttempts]);
+
+  const handleOpenGrading = (attemptId) => {
+    setSelectedAttemptId(attemptId);
+    setShowGradingModal(true);
+  };
+
+  const handleCloseGrading = () => {
+    setShowGradingModal(false);
+    setSelectedAttemptId(null);
+  };
+
+  const handleSaveGrade = () => {
+    // Recargar datos
+    loadAttempts();
+    loadRankingData();
+  };
 
   const getMedalEmoji = (posicion) => {
     switch(posicion) {
@@ -252,6 +302,133 @@ export default function ExamWindowResultsPage() {
             <div className="alert alert-light mt-3">
               <i className="fas fa-sticky-note me-2"></i>
               <strong>Notas:</strong> {examWindow.notas}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Sección de Intentos y Calificaciones */}
+      <div className="modern-card mb-4">
+        <div className="modern-card-header" style={{
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+        }}>
+          <h3 className="modern-card-title mb-0" style={{ color: 'white' }}>
+            <i className="fas fa-user-graduate me-2"></i>
+            Intentos de Estudiantes
+          </h3>
+        </div>
+        <div className="modern-card-body">
+          {attemptsLoading ? (
+            <div className="loading-container">
+              <div className="modern-spinner"></div>
+              <p>Cargando intentos...</p>
+            </div>
+          ) : attempts.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-icon">
+                <i className="fas fa-clipboard-list"></i>
+              </div>
+              <h4 className="empty-title">Sin intentos finalizados</h4>
+              <p className="empty-subtitle">
+                Aún no hay estudiantes que hayan completado este examen.
+              </p>
+            </div>
+          ) : (
+            <div className="table-responsive">
+              <table className="table table-hover mb-0">
+                <thead style={{ 
+                  background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)',
+                  borderBottom: '2px solid var(--primary-color)'
+                }}>
+                  <tr>
+                    <th>Estudiante</th>
+                    <th>Email</th>
+                    <th style={{ textAlign: 'center' }}>
+                      <i className="fas fa-robot me-2"></i>
+                      Puntaje Automático
+                    </th>
+                    <th style={{ textAlign: 'center' }}>
+                      <i className="fas fa-user-check me-2"></i>
+                      Calificación Manual
+                    </th>
+                    <th style={{ textAlign: 'center' }}>
+                      <i className="fas fa-calendar me-2"></i>
+                      Finalizado
+                    </th>
+                    <th style={{ textAlign: 'center', width: '150px' }}>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {attempts.map((attempt) => (
+                    <tr key={attempt.id}>
+                      <td>
+                        <div className="d-flex align-items-center">
+                          <div className="user-avatar me-2" style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '50%',
+                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'white',
+                            fontWeight: 'bold',
+                            fontSize: '0.9rem'
+                          }}>
+                            {attempt.user.nombre.charAt(0).toUpperCase()}
+                          </div>
+                          <div>{attempt.user.nombre}</div>
+                        </div>
+                      </td>
+                      <td style={{ fontSize: '0.9rem', color: '#6b7280' }}>
+                        {attempt.user.email}
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        {attempt.puntaje !== null ? (
+                          <span className={`badge ${
+                            attempt.puntaje >= 70 ? 'bg-success' :
+                            attempt.puntaje >= 40 ? 'bg-warning' :
+                            'bg-danger'
+                          }`}>
+                            {attempt.puntaje.toFixed(1)}%
+                          </span>
+                        ) : (
+                          <span className="text-muted">-</span>
+                        )}
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        {attempt.calificacionManual !== null ? (
+                          <div>
+                            <span className="badge bg-info">
+                              {attempt.calificacionManual}
+                            </span>
+                            {attempt.corregidoAt && (
+                              <div className="small text-muted mt-1">
+                                {new Date(attempt.corregidoAt).toLocaleDateString()}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="badge bg-secondary">Sin calificar</span>
+                        )}
+                      </td>
+                      <td style={{ textAlign: 'center', fontSize: '0.9rem', color: '#6b7280' }}>
+                        {new Date(attempt.finishedAt).toLocaleString()}
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <button
+                          className="modern-btn modern-btn-sm modern-btn-primary"
+                          onClick={() => handleOpenGrading(attempt.id)}
+                          title="Corregir manualmente"
+                        >
+                          <i className="fas fa-edit me-1"></i>
+                          Corregir
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
@@ -691,6 +868,15 @@ export default function ExamWindowResultsPage() {
             onClose={() => setShowMoodleModal(false)}
           />
         </>
+      )}
+
+      {/* Manual Grading Modal */}
+      {showGradingModal && selectedAttemptId && (
+        <ManualGradingModal
+          attemptId={selectedAttemptId}
+          onClose={handleCloseGrading}
+          onSave={handleSaveGrade}
+        />
       )}
     </div>
   );
