@@ -64,6 +64,18 @@ const ProgrammingExamView = () => {
   const searchParams = new URLSearchParams(location.search);
   const windowId = searchParams.get('windowId');
 
+  // 🔒 Función para obtener el nombre del archivo principal según el lenguaje
+  const getMainFileName = useCallback(() => {
+    if (!exam) return null;
+    return exam.lenguajeProgramacion === 'python' ? 'main.py' : 'main.js';
+  }, [exam]);
+
+  // 🔒 Verificar si un archivo es el archivo principal
+  const isMainFile = useCallback((filename) => {
+    const mainFileName = getMainFileName();
+    return mainFileName && filename === mainFileName;
+  }, [getMainFileName]);
+
   // Configuración del editor Monaco optimizada para reducir ResizeObserver errors
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
   
@@ -204,6 +216,8 @@ const ProgrammingExamView = () => {
         
         // Si no hay archivos, crear uno por defecto con el código inicial del examen
         if (sortedFiles.length === 0) {
+          // 🔒 IMPORTANTE: El archivo principal siempre es main.py (Python) o main.js (JavaScript)
+          // Este archivo no se puede eliminar y es el que se evalúa con los test cases
           const defaultFileName = `main.${exam?.lenguajeProgramacion === 'python' ? 'py' : 'js'}`;
           const defaultContent = exam?.codigoInicial || '';
           
@@ -284,12 +298,21 @@ const ProgrammingExamView = () => {
   const finishExam = async () => {
     if (!attempt) return;
     
+    // 🔒 Validación: Verificar que existe el archivo principal
+    const mainFileName = getMainFileName();
+    const mainFileExists = files.some(f => f.filename === mainFileName) || fileCache[mainFileName];
+    
+    if (!mainFileExists) {
+      setError(`Debes crear el archivo principal "${mainFileName}" antes de finalizar el examen`);
+      return;
+    }
+    
     setShowFinishModal(false);
     
     try {
       setLoading(true);
       
-      // � PASO 1: Crear versión de "submission" (snapshot del envío)
+      // 📁 PASO 1: Crear versión de "submission" (snapshot del envío)
       // Recolectar todos los archivos con su contenido actual
       const submissionFiles = [];
       
@@ -334,7 +357,12 @@ const ProgrammingExamView = () => {
         })
       });
       
-      // 🏁 PASO 2: Finalizar el examen
+      // 🏁 PASO 2: Finalizar el examen con el archivo principal
+      // Obtener el contenido del archivo principal
+      const mainFileContent = fileCache[mainFileName] || 
+                             files.find(f => f.filename === mainFileName)?.content || 
+                             '';
+      
       await fetch(`${API_BASE_URL}/exam-attempts/${attempt.id}/finish`, {
         method: 'PUT',
         headers: {
@@ -342,7 +370,7 @@ const ProgrammingExamView = () => {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          codigoProgramacion: code
+          codigoProgramacion: mainFileContent
         })
       });
 
@@ -536,9 +564,15 @@ const ProgrammingExamView = () => {
   }, [loadFile]);
 
   const requestDeleteFile = useCallback((filename) => {
+    // 🔒 Proteger el archivo principal
+    if (isMainFile(filename)) {
+      setError('No puedes eliminar el archivo principal del examen');
+      return;
+    }
+    
     setFileToDelete(filename);
     setShowDeleteModal(true);
-  }, []);
+  }, [isMainFile]);
 
   const deleteFile = useCallback(async () => {
     if (!fileToDelete) return;
@@ -2801,12 +2835,18 @@ const ProgrammingExamView = () => {
                   <div className="files-grid">
                     {files.map((file) => {
                       const isHidden = hiddenFiles.has(file.filename);
+                      const isProtected = isMainFile(file.filename);
                       return (
                         <div key={file.filename} className={`file-item ${isHidden ? 'file-hidden' : ''}`}>
                           <div className="file-info">
                             <div className="file-name">
                               <i className="fas fa-file-code me-2"></i>
                               {file.filename}
+                              {isProtected && (
+                                <span className="badge bg-primary ms-2" style={{fontSize: '0.7rem'}} title="Archivo principal - No se puede eliminar">
+                                  <i className="fas fa-lock"></i> Principal
+                                </span>
+                              )}
                               {isHidden && (
                                 <span className="badge bg-secondary ms-2" style={{fontSize: '0.7rem'}}>
                                   Oculto
@@ -2834,7 +2874,9 @@ const ProgrammingExamView = () => {
                             <button
                               className="btn btn-sm btn-outline-danger"
                               onClick={() => requestDeleteFile(file.filename)}
-                              title="Eliminar archivo permanentemente"
+                              disabled={isProtected}
+                              title={isProtected ? "No puedes eliminar el archivo principal" : "Eliminar archivo permanentemente"}
+                              style={isProtected ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
                             >
                               <i className="fas fa-trash"></i>
                             </button>
