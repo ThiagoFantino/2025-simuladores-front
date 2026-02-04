@@ -28,7 +28,17 @@ const ExamCreator = () => {
   const [testCases, setTestCases] = useState([
     { description: "", input: "", expectedOutput: "" }
   ]);
-  const [solucionReferencia, setSolucionReferencia] = useState("");
+  
+  // Estados para solución de referencia multi-archivo
+  const [referenceFiles, setReferenceFiles] = useState([
+    { filename: 'main.py', content: '' }
+  ]);
+  const [currentReferenceFile, setCurrentReferenceFile] = useState('main.py');
+  const [showNewReferenceFileModal, setShowNewReferenceFileModal] = useState(false);
+  const [newReferenceFileName, setNewReferenceFileName] = useState('');
+  const [referenceFileToDelete, setReferenceFileToDelete] = useState('');
+  const [showDeleteReferenceFileModal, setShowDeleteReferenceFileModal] = useState(false);
+  
   const [codigoTemporal, setCodigoTemporal] = useState("");
   const [testResults, setTestResults] = useState(null);
   const [isRunningTests, setIsRunningTests] = useState(false);
@@ -37,6 +47,32 @@ const ExamCreator = () => {
   
   const [error, setError] = useState("");
   const [isPublishing, setIsPublishing] = useState(false);
+
+  // Efecto para actualizar extensión de archivos cuando cambia el lenguaje
+  React.useEffect(() => {
+    const newExtension = lenguajeProgramacion === 'python' ? '.py' : '.js';
+    const oldExtension = lenguajeProgramacion === 'python' ? '.js' : '.py';
+    
+    setReferenceFiles(prevFiles => 
+      prevFiles.map(file => {
+        if (file.filename.endsWith(oldExtension)) {
+          return {
+            ...file,
+            filename: file.filename.replace(oldExtension, newExtension)
+          };
+        }
+        return file;
+      })
+    );
+    
+    // Actualizar el archivo actual si cambió
+    setCurrentReferenceFile(prev => {
+      if (prev && prev.endsWith(oldExtension)) {
+        return prev.replace(oldExtension, newExtension);
+      }
+      return prev;
+    });
+  }, [lenguajeProgramacion]);
 
   // Agregar opción nueva
   const handleAgregarOpcion = () => {
@@ -84,6 +120,54 @@ const ExamCreator = () => {
     setOpciones(["", ""]);
     setCorrecta(0);
     setError("");
+  };
+
+  // Funciones para manejar archivos de referencia
+  const handleAddReferenceFile = () => {
+    if (!newReferenceFileName.trim()) {
+      alert('Por favor ingresa un nombre de archivo');
+      return;
+    }
+    
+    const extension = lenguajeProgramacion === 'python' ? '.py' : '.js';
+    let filename = newReferenceFileName.trim();
+    
+    if (!filename.endsWith(extension)) {
+      filename += extension;
+    }
+    
+    if (referenceFiles.some(f => f.filename === filename)) {
+      alert('Ya existe un archivo con ese nombre');
+      return;
+    }
+    
+    setReferenceFiles([...referenceFiles, { filename, content: '' }]);
+    setCurrentReferenceFile(filename);
+    setNewReferenceFileName('');
+    setShowNewReferenceFileModal(false);
+  };
+  
+  const handleDeleteReferenceFile = () => {
+    if (referenceFiles.length === 1) {
+      alert('Debe haber al menos un archivo');
+      return;
+    }
+    
+    const updatedFiles = referenceFiles.filter(f => f.filename !== referenceFileToDelete);
+    setReferenceFiles(updatedFiles);
+    
+    if (currentReferenceFile === referenceFileToDelete) {
+      setCurrentReferenceFile(updatedFiles[0].filename);
+    }
+    
+    setShowDeleteReferenceFileModal(false);
+    setReferenceFileToDelete('');
+  };
+  
+  const handleReferenceFileContentChange = (filename, content) => {
+    setReferenceFiles(referenceFiles.map(f => 
+      f.filename === filename ? { ...f, content } : f
+    ));
   };
 
   // Funciones para manejar test cases
@@ -164,8 +248,9 @@ const ExamCreator = () => {
   const handleRunTestsReference = async () => {
     console.log('Ejecutando tests con solución de referencia...');
     
-    if (!solucionReferencia.trim()) {
-      const errorMsg = "Debes ingresar una solución de referencia para probar";
+    const currentFile = referenceFiles.find(f => f.filename === currentReferenceFile);
+    if (!currentFile || !currentFile.content.trim()) {
+      const errorMsg = "Debes ingresar código en la solución de referencia para probar";
       setError(errorMsg);
       console.error('Validación falló:', errorMsg);
       alert(errorMsg);
@@ -197,7 +282,9 @@ const ExamCreator = () => {
     try {
       console.log('Llamando a testSolutionPreview...');
       const validTestCases = testCases.filter(tc => tc.expectedOutput && tc.expectedOutput.trim());
-      const results = await testSolutionPreview(solucionReferencia, lenguajeProgramacion, validTestCases);
+      // Por ahora usar el archivo actual, en el futuro se podría ejecutar con múltiples archivos
+      const mainFile = referenceFiles.find(f => f.filename === currentReferenceFile) || referenceFiles[0];
+      const results = await testSolutionPreview(mainFile.content, lenguajeProgramacion, validTestCases);
       console.log('Resultados:', results);
       setTestResults(results);
       setShowTestPanel(true);
@@ -229,7 +316,7 @@ const ExamCreator = () => {
         examData.enunciadoProgramacion = enunciadoProgramacion;
         examData.codigoInicial = codigoInicial;
         examData.testCases = testCases;
-        examData.solucionReferencia = solucionReferencia;
+        examData.referenceFiles = referenceFiles; // Enviar archivos de referencia
       }
 
       await createExam(examData);
@@ -710,7 +797,7 @@ const ExamCreator = () => {
                 </div>
                 )}
 
-                {/* Tab de Solución de Referencia */}
+                {/* Tab de Solución de Referencia - Sistema Multi-archivo */}
                 {activeTab === 'reference' && (
                   <div className="tab-pane-custom fade show active">
                     <div style={{ 
@@ -719,92 +806,173 @@ const ExamCreator = () => {
                       overflow: 'hidden',
                       backgroundColor: '#1e1e1e'
                     }}>
-                    {/* Header del editor */}
-                    <div style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '8px 16px',
-                      backgroundColor: '#2d2d30',
-                      borderBottom: '1px solid #3e3e42',
-                      color: '#cccccc'
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <i className="fas fa-star" style={{ color: '#ffd700' }}></i>
-                        <span style={{ fontSize: '14px', fontWeight: '500' }}>
-                          solucion_referencia.{lenguajeProgramacion === 'python' ? 'py' : 'js'}
-                        </span>
+                      {/* Toolbar superior: tabs y acciones */}
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '8px 16px',
+                        backgroundColor: '#2d2d30',
+                        borderBottom: '1px solid #3e3e42',
+                        color: '#cccccc',
+                        flexWrap: 'wrap',
+                        gap: '8px'
+                      }}>
+                        {/* Tabs de archivos */}
+                        <div style={{ 
+                          display: 'flex', 
+                          gap: '4px', 
+                          flexWrap: 'wrap',
+                          flex: 1,
+                          minWidth: 0
+                        }}>
+                          {referenceFiles.map((file) => (
+                            <div
+                              key={file.filename}
+                              onClick={() => setCurrentReferenceFile(file.filename)}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                padding: '6px 12px',
+                                backgroundColor: currentReferenceFile === file.filename ? '#1e1e1e' : 'transparent',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '13px',
+                                border: currentReferenceFile === file.filename ? '1px solid #3e3e42' : '1px solid transparent',
+                                transition: 'all 0.2s'
+                              }}
+                              onMouseEnter={(e) => {
+                                if (currentReferenceFile !== file.filename) {
+                                  e.currentTarget.style.backgroundColor = '#3e3e42';
+                                }
+                              }}
+                              onMouseLeave={(e) => {
+                                if (currentReferenceFile !== file.filename) {
+                                  e.currentTarget.style.backgroundColor = 'transparent';
+                                }
+                              }}
+                            >
+                              <i className="fas fa-file-code" style={{ 
+                                color: currentReferenceFile === file.filename ? '#4ec9b0' : '#858585' 
+                              }}></i>
+                              <span>{file.filename}</span>
+                              {referenceFiles.length > 1 && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setReferenceFileToDelete(file.filename);
+                                    setShowDeleteReferenceFileModal(true);
+                                  }}
+                                  style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: '#858585',
+                                    cursor: 'pointer',
+                                    padding: '2px 4px',
+                                    fontSize: '12px'
+                                  }}
+                                  title="Eliminar archivo"
+                                >
+                                  <i className="fas fa-times"></i>
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                          <button
+                            onClick={() => setShowNewReferenceFileModal(true)}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              padding: '6px 10px',
+                              backgroundColor: 'transparent',
+                              border: '1px solid #3e3e42',
+                              borderRadius: '4px',
+                              color: '#cccccc',
+                              cursor: 'pointer',
+                              fontSize: '13px',
+                              transition: 'all 0.2s'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#3e3e42'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                            title="Nuevo archivo"
+                          >
+                            <i className="fas fa-plus"></i>
+                          </button>
+                        </div>
+
+                        {/* Botón de ejecutar tests */}
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-success"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleRunTestsReference();
+                          }}
+                          disabled={isRunningTests}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            fontSize: '13px'
+                          }}
+                        >
+                          {isRunningTests ? (
+                            <>
+                              <div className="spinner-border spinner-border-sm" role="status"></div>
+                              Ejecutando...
+                            </>
+                          ) : (
+                            <>
+                              <i className="fas fa-play"></i>
+                              Ejecutar Tests
+                            </>
+                          )}
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-success"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleRunTestsReference();
-                        }}
-                        disabled={isRunningTests || !solucionReferencia.trim()}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          fontSize: '13px'
-                        }}
-                      >
-                        {isRunningTests ? (
-                          <>
-                            <div className="spinner-border spinner-border-sm" role="status"></div>
-                            Ejecutando...
-                          </>
-                        ) : (
-                          <>
-                            <i className="fas fa-play"></i>
-                            Ejecutar Tests
-                          </>
-                        )}
-                      </button>
-                    </div>
                     
-                    {/* Editor Monaco */}
-                    <Editor
-                      height="500px"
-                      language={lenguajeProgramacion}
-                      value={solucionReferencia}
-                      onChange={(value) => setSolucionReferencia(value || '')}
-                      theme="vs-dark"
-                      options={{
-                        selectOnLineNumbers: true,
-                        roundedSelection: false,
-                        readOnly: false,
-                        cursorStyle: 'line',
-                        automaticLayout: true,
-                        scrollBeyondLastLine: false,
-                        minimap: { enabled: true },
-                        fontSize: 14,
-                        lineNumbers: 'on',
-                        wordWrap: 'on',
-                        tabSize: lenguajeProgramacion === 'python' ? 4 : 2,
-                        quickSuggestions: intellisenseHabilitado,
-                        suggestOnTriggerCharacters: intellisenseHabilitado,
-                        parameterHints: { enabled: intellisenseHabilitado },
-                        suggest: {
-                          showMethods: intellisenseHabilitado,
-                          showFunctions: intellisenseHabilitado,
-                          showConstructors: intellisenseHabilitado,
-                          showFields: intellisenseHabilitado,
-                          showVariables: intellisenseHabilitado,
-                          showClasses: intellisenseHabilitado,
-                          showKeywords: intellisenseHabilitado
-                        }
-                      }}
-                    />
+                      {/* Editor Monaco */}
+                      <Editor
+                        height="500px"
+                        language={lenguajeProgramacion}
+                        value={referenceFiles.find(f => f.filename === currentReferenceFile)?.content || ''}
+                        onChange={(value) => handleReferenceFileContentChange(currentReferenceFile, value || '')}
+                        theme="vs-dark"
+                        options={{
+                          selectOnLineNumbers: true,
+                          roundedSelection: false,
+                          readOnly: false,
+                          cursorStyle: 'line',
+                          automaticLayout: true,
+                          scrollBeyondLastLine: false,
+                          minimap: { enabled: true },
+                          fontSize: 14,
+                          lineNumbers: 'on',
+                          wordWrap: 'on',
+                          tabSize: lenguajeProgramacion === 'python' ? 4 : 2,
+                          quickSuggestions: intellisenseHabilitado,
+                          suggestOnTriggerCharacters: intellisenseHabilitado,
+                          parameterHints: { enabled: intellisenseHabilitado },
+                          suggest: {
+                            showMethods: intellisenseHabilitado,
+                            showFunctions: intellisenseHabilitado,
+                            showConstructors: intellisenseHabilitado,
+                            showFields: intellisenseHabilitado,
+                            showVariables: intellisenseHabilitado,
+                            showClasses: intellisenseHabilitado,
+                            showKeywords: intellisenseHabilitado
+                          }
+                        }}
+                      />
+                    </div>
+                    <small className="form-text text-muted d-block mt-2">
+                      <i className="fas fa-lock me-1"></i>
+                      Esta solución se guardará con el examen y solo será visible para ti.
+                      Te permite validar que tus tests están correctos. Puedes crear múltiples archivos.
+                    </small>
                   </div>
-                  <small className="form-text text-muted d-block mt-2">
-                    <i className="fas fa-lock me-1"></i>
-                    Esta solución se guardará con el examen y solo será visible para ti.
-                    Te permite validar que tus tests están correctos.
-                  </small>
-                </div>
                 )}
               </div>
 
@@ -1118,6 +1286,117 @@ const ExamCreator = () => {
         confirmText={(modal.type === 'warning') ? 'Confirmar' : 'Entendido'}
         cancelText="Cancelar"
       />
+
+      {/* Modal para agregar archivo de referencia */}
+      {showNewReferenceFileModal && (
+        <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">
+                  <i className="fas fa-file-plus me-2"></i>
+                  Nuevo Archivo de Referencia
+                </h5>
+                <button 
+                  type="button" 
+                  className="btn-close" 
+                  onClick={() => {
+                    setShowNewReferenceFileModal(false);
+                    setNewReferenceFileName('');
+                  }}
+                ></button>
+              </div>
+              <div className="modal-body">
+                <label className="form-label">Nombre del archivo:</label>
+                <input
+                  type="text"
+                  className="form-control"
+                  placeholder={`Ej: utils${lenguajeProgramacion === 'python' ? '.py' : '.js'}`}
+                  value={newReferenceFileName}
+                  onChange={(e) => setNewReferenceFileName(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleAddReferenceFile();
+                    }
+                  }}
+                  autoFocus
+                />
+                <small className="text-muted mt-2 d-block">
+                  Se agregará automáticamente la extensión .{lenguajeProgramacion === 'python' ? 'py' : 'js'} si no la incluyes
+                </small>
+              </div>
+              <div className="modal-footer">
+                <button 
+                  type="button" 
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    setShowNewReferenceFileModal(false);
+                    setNewReferenceFileName('');
+                  }}
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-primary"
+                  onClick={handleAddReferenceFile}
+                >
+                  <i className="fas fa-plus me-2"></i>
+                  Crear Archivo
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal para eliminar archivo de referencia */}
+      {showDeleteReferenceFileModal && (
+        <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">
+                  <i className="fas fa-exclamation-triangle me-2 text-warning"></i>
+                  Confirmar Eliminación
+                </h5>
+                <button 
+                  type="button" 
+                  className="btn-close" 
+                  onClick={() => {
+                    setShowDeleteReferenceFileModal(false);
+                    setReferenceFileToDelete('');
+                  }}
+                ></button>
+              </div>
+              <div className="modal-body">
+                <p>¿Estás seguro de que deseas eliminar el archivo <strong>{referenceFileToDelete}</strong>?</p>
+                <p className="text-muted mb-0">Esta acción no se puede deshacer.</p>
+              </div>
+              <div className="modal-footer">
+                <button 
+                  type="button" 
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    setShowDeleteReferenceFileModal(false);
+                    setReferenceFileToDelete('');
+                  }}
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-danger"
+                  onClick={handleDeleteReferenceFile}
+                >
+                  <i className="fas fa-trash me-2"></i>
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

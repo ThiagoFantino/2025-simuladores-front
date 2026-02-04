@@ -157,13 +157,28 @@ export async function updateUser(id, userData) {
 // Exam endpoints
 export async function createExam(examData) {
   try {
+    // Extraer archivos de referencia si existen
+    const { referenceFiles, ...examDataWithoutFiles } = examData;
+    
     const res = await fetch(`${API_BASE_URL}/exams/create`, {
       method: "POST",
       headers: getAuthHeaders(),
-      body: JSON.stringify(examData),
+      body: JSON.stringify(examDataWithoutFiles),
     });
 
-    return await handleResponse(res);
+    const createdExam = await handleResponse(res);
+    
+    // Si hay archivos de referencia y el examen se creó correctamente, guardarlos
+    if (referenceFiles && referenceFiles.length > 0 && createdExam.id) {
+      try {
+        await saveReferenceFiles(createdExam.id, referenceFiles);
+      } catch (fileError) {
+        console.error('Error guardando archivos de referencia:', fileError);
+        // No fallar la creación del examen si falla el guardado de archivos
+      }
+    }
+    
+    return createdExam;
   } catch (err) {
     throw err;
   }
@@ -331,6 +346,47 @@ export async function saveReferenceSolution(examId, solucionReferencia) {
       method: "PUT",
       headers: getAuthHeaders(),
       body: JSON.stringify({ solucionReferencia }),
+    });
+
+    return await handleResponse(res);
+  } catch (err) {
+    throw err;
+  }
+}
+
+// Reference solution files endpoints (multi-file support)
+export async function getReferenceFiles(examId) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/exam-files/${examId}/reference-solution`, {
+      method: "GET",
+      headers: getAuthHeaders(),
+    });
+
+    return await handleResponse(res);
+  } catch (err) {
+    throw err;
+  }
+}
+
+export async function saveReferenceFiles(examId, files) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/exam-files/${examId}/reference-solution`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ files }),
+    });
+
+    return await handleResponse(res);
+  } catch (err) {
+    throw err;
+  }
+}
+
+export async function deleteReferenceFile(examId, filename) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/exam-files/${examId}/reference-solution/${filename}`, {
+      method: "DELETE",
+      headers: getAuthHeaders(),
     });
 
     return await handleResponse(res);
