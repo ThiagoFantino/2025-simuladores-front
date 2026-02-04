@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
+import "../components/action-cards.css";
 import UserHeader from "../components/UserHeader";
 import { useAuth } from "../contexts/AuthContext";
 import { getExams } from "../services/api";
@@ -62,7 +63,7 @@ const Principal = () => {
           <div className="modern-card-body">
             <div className="system-explanation">
               <div className="row g-4">
-                <div className="col-md-4">
+                <div className="col-md-6">
                   <div className="explanation-step">
                     <div className="step-icon">
                       <i className="fas fa-plus-circle text-primary"></i>
@@ -70,36 +71,26 @@ const Principal = () => {
                     <div className="step-content">
                       <h5 className="step-title">1. Crear Exámenes</h5>
                       <p className="step-description">
-                        Haz clic en "Crear Examen" para diseñar evaluaciones. Puedes crear dos tipos: 
-                        <strong>Múltiple Choice</strong> (agrega preguntas con 4 opciones y marca la correcta) o 
-                        <strong> Programación</strong> (define un problema, selecciona el lenguaje Python/JavaScript y configura intellisense).
+                        Hacé clic en <strong>"Crear Nuevo Examen"</strong> para diseñar evaluaciones. Puedes crear dos tipos de examenes: 
+                        <strong> Múltiple Choice</strong> o <strong> Programación</strong>.
                       </p>
                     </div>
                   </div>
                 </div>
-                <div className="col-md-4">
+                <div className="col-md-6">
                   <div className="explanation-step">
                     <div className="step-icon">
-                      <i className="fas fa-calendar-alt text-success"></i>
+                      <i className="fas fa-tasks text-success"></i>
                     </div>
                     <div className="step-content">
-                      <h5 className="step-title">2. Programar Ventanas</h5>
-                      <p className="step-description">
-                        Ve a "Ventanas de Examen" para crear fechas específicas. Selecciona un examen, define fecha y hora de inicio/fin o que no haya limites de horario, establece el cupo máximo de estudiantes, si se quiere que el exámen se tome usando el navegador SEB y guarda. Los estudiantes podrán inscribirse según disponibilidad.
+                      <h5 className="step-title">2. Gestionar Ventanas y Corregir</h5>
+                      <p className="step-description mb-2">
+                        Hacé clic en <strong>"Gestionar Ventanas"</strong> para:
                       </p>
-                    </div>
-                  </div>
-                </div>
-                <div className="col-md-4">
-                  <div className="explanation-step">
-                    <div className="step-icon">
-                      <i className="fas fa-user-check text-warning"></i>
-                    </div>
-                    <div className="step-content">
-                      <h5 className="step-title">3. Habilitar y Evaluar</h5>
-                      <p className="step-description">
-                        En cada ventana de examen, revisa las inscripciones y habilita a los estudiantes marcando "Presente" si el exámen requiere asistencia. Si este es el caso, solo estudiantes habilitados pueden rendir en el horario programado. Consulta resultados una vez finalizados.
-                      </p>
+                      <ul className="step-list">
+                        <li><strong>Crear ventanas:</strong> Seleccioná un examen, definí fecha/hora (o sin límites), cupo máximo y si requiere Safe Exam Browser para mayor seguridad.</li>
+                        <li><strong>Corregir:</strong> Una vez rendidos, los múltiple choice se corrigen automáticamente. Los de programación podés corregirlos con test cases automáticos o manualmente agregando calificación</li>
+                      </ul>
                     </div>
                   </div>
                 </div>
@@ -111,29 +102,57 @@ const Principal = () => {
 
       <div className="modern-card mb-4">
         <div className="modern-card-header">
-          <div className="profesor-panel-header">
-            <div className="panel-title-section">
-              <h2 className="page-title mb-0">
-                <i className="fas fa-chalkboard-teacher me-2"></i>
-                <span className="title-text">Panel de Profesor</span>
-              </h2>
+          <h2 className="page-title mb-0">
+            <i className="fas fa-chalkboard-teacher me-2"></i>
+            <span className="title-text">Panel de Profesor</span>
+          </h2>
+        </div>
+        <div className="modern-card-body">
+          <div className="row g-3">
+            <div className="col-md-6">
+              <div className="action-card">
+                <div className="action-step-badge">
+                  <span className="step-number">1</span>
+                </div>
+                <div className="action-content">
+                  <h5 className="action-title">
+                    <i className="fas fa-plus-circle text-primary me-2"></i>
+                    Crear Examen
+                  </h5>
+                  <p className="action-description text-muted mb-3">
+                    Comienza diseñando tu examen de múltiple choice o programación
+                  </p>
+                  <button 
+                    className="modern-btn modern-btn-primary w-100" 
+                    onClick={handleCrearExamen}
+                  >
+                    <i className="fas fa-plus me-2"></i>
+                    <span className="btn-text">Crear Nuevo Examen</span>
+                  </button>
+                </div>
+              </div>
             </div>
-            <div className="panel-actions-section">
-              <div className="d-flex gap-2 flex-wrap justify-content-end">
-                <button 
-                  className="modern-btn modern-btn-secondary modern-btn-sm" 
-                  onClick={() => navigate("/exam-windows")}
-                >
-                  <i className="fas fa-calendar-alt me-2"></i>
-                  <span className="btn-text">Ventanas de Examen</span>
-                </button>
-                <button 
-                  className="modern-btn modern-btn-primary modern-btn-sm" 
-                  onClick={handleCrearExamen}
-                >
-                  <i className="fas fa-plus me-2"></i>
-                  <span className="btn-text">Crear Examen</span>
-                </button>
+            <div className="col-md-6">
+              <div className="action-card">
+                <div className="action-step-badge secondary">
+                  <span className="step-number">2</span>
+                </div>
+                <div className="action-content">
+                  <h5 className="action-title">
+                    <i className="fas fa-tasks text-success me-2"></i>
+                    Gestionar y Corregir
+                  </h5>
+                  <p className="action-description text-muted mb-3">
+                    Creá ventanas de examen y corregí los exámenes en cada ventana
+                  </p>
+                  <button 
+                    className="modern-btn modern-btn-secondary w-100" 
+                    onClick={() => navigate("/exam-windows")}
+                  >
+                    <i className="fas fa-calendar-check me-2"></i>
+                    <span className="btn-text">Gestionar Ventanas</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
