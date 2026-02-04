@@ -148,13 +148,11 @@ export default function ManualGradingModal({ attemptId, onClose, onSave }) {
 
   const handleSaveGrade = async () => {
     if (!calificacionManual || calificacionManual === '') {
-      alert('Por favor ingresa una calificación');
       return;
     }
 
     const grade = parseFloat(calificacionManual);
     if (isNaN(grade) || grade < 0 || grade > 100) {
-      alert('La calificación debe ser un número entre 0 y 100');
       return;
     }
 
@@ -173,16 +171,14 @@ export default function ManualGradingModal({ attemptId, onClose, onSave }) {
       });
 
       if (response.ok) {
-        alert('Calificación guardada exitosamente');
         if (onSave) onSave();
         if (onClose) onClose();
       } else {
         const errorData = await response.json();
-        alert(`Error: ${errorData.error || 'No se pudo guardar la calificación'}`);
+        console.error('Error al guardar:', errorData);
       }
     } catch (error) {
       console.error('Error saving grade:', error);
-      alert('Error de conexión al guardar la calificación');
     } finally {
       setSaving(false);
     }

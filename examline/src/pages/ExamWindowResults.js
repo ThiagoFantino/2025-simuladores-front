@@ -159,11 +159,10 @@ export default function ExamWindowResultsPage() {
     setSelectedAttemptId(null);
   };
 
-  const handleSaveGrade = () => {
-    // Recargar datos
-    setAttemptsLoaded(false);
-    loadAttempts();
-    loadRankingData();
+  const handleSaveGrade = async () => {
+    // Recargar datos después de guardar
+    await loadAttempts();
+    await loadRankingData();
   };
 
   const getMedalEmoji = (posicion) => {
@@ -341,8 +340,34 @@ export default function ExamWindowResultsPage() {
               </p>
             </div>
           ) : (
-            <div className="table-responsive">
-              <table className="table table-hover mb-0">
+            <>
+              {/* Leyenda de colores */}
+              <div className="mb-3 d-flex gap-3 align-items-center" style={{ 
+                padding: '12px 16px', 
+                backgroundColor: '#f8f9fa', 
+                borderRadius: '8px',
+                border: '1px solid #e9ecef'
+              }}>
+                <span style={{ fontWeight: '600', color: '#495057' }}>
+                  <i className="fas fa-info-circle me-2"></i>
+                  Leyenda:
+                </span>
+                <div className="d-flex align-items-center gap-2">
+                  <span style={{ fontSize: '0.9rem', color: '#495057' }}>
+                    <i className="fas fa-check-circle me-1" style={{ color: '#28a745' }}></i>
+                    Corregido manualmente
+                  </span>
+                </div>
+                <div className="d-flex align-items-center gap-2">
+                  <span style={{ fontSize: '0.9rem', color: '#495057' }}>
+                    <i className="fas fa-clock me-1" style={{ color: '#ffc107' }}></i>
+                    Pendiente de corrección
+                  </span>
+                </div>
+              </div>
+              
+              <div className="table-responsive">
+              <table className="table mb-0 attempts-table">
                 <thead style={{ 
                   background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)',
                   borderBottom: '2px solid var(--primary-color)'
@@ -366,77 +391,95 @@ export default function ExamWindowResultsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {attempts.map((attempt) => (
-                    <tr key={attempt.id}>
-                      <td>
-                        <div className="d-flex align-items-center">
-                          <div className="user-avatar me-2" style={{
-                            width: '32px',
-                            height: '32px',
-                            borderRadius: '50%',
-                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: 'white',
-                            fontWeight: 'bold',
-                            fontSize: '0.9rem'
-                          }}>
-                            {attempt.user.nombre.charAt(0).toUpperCase()}
+                  {attempts.map((attempt) => {
+                    const isManuallyGraded = attempt.calificacionManual !== null && attempt.calificacionManual !== undefined;
+                    
+                    return (
+                      <tr key={attempt.id}>
+                        <td>
+                          <div className="d-flex align-items-center">
+                            <div className="user-avatar me-2" style={{
+                              width: '32px',
+                              height: '32px',
+                              borderRadius: '50%',
+                              background: isManuallyGraded 
+                                ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' // Verde para corregidos
+                                : 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', // Naranja para pendientes
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: 'white',
+                              fontWeight: 'bold',
+                              fontSize: '0.9rem'
+                            }}>
+                              {attempt.user.nombre.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="d-flex align-items-center">
+                              {attempt.user.nombre}
+                              {isManuallyGraded && (
+                                <i className="fas fa-check-circle ms-2" style={{ color: '#28a745' }} title="Corregido manualmente"></i>
+                              )}
+                              {!isManuallyGraded && (
+                                <i className="fas fa-clock ms-2" style={{ color: '#ffc107' }} title="Pendiente de corrección"></i>
+                              )}
+                            </div>
                           </div>
-                          <div>{attempt.user.nombre}</div>
-                        </div>
-                      </td>
-                      <td style={{ fontSize: '0.9rem', color: '#6b7280' }}>
-                        {attempt.user.email}
-                      </td>
-                      <td style={{ textAlign: 'center' }}>
-                        {attempt.puntaje !== null ? (
-                          <span className={`badge ${
-                            attempt.puntaje >= 70 ? 'bg-success' :
-                            attempt.puntaje >= 40 ? 'bg-warning' :
-                            'bg-danger'
-                          }`}>
-                            {attempt.puntaje.toFixed(1)}%
-                          </span>
-                        ) : (
-                          <span className="text-muted">-</span>
-                        )}
-                      </td>
-                      <td style={{ textAlign: 'center' }}>
-                        {attempt.calificacionManual !== null ? (
-                          <div>
-                            <span className="badge bg-info">
-                              {attempt.calificacionManual}
+                        </td>
+                        <td style={{ fontSize: '0.9rem', color: '#6b7280' }}>
+                          {attempt.user.email}
+                        </td>
+                        <td style={{ textAlign: 'center' }}>
+                          {attempt.puntaje !== null ? (
+                            <span className={`badge ${
+                              attempt.puntaje >= 70 ? 'bg-success' :
+                              attempt.puntaje >= 40 ? 'bg-warning' :
+                              'bg-danger'
+                            }`}>
+                              {attempt.puntaje.toFixed(1)}%
                             </span>
-                            {attempt.corregidoAt && (
-                              <div className="small text-muted mt-1">
-                                {new Date(attempt.corregidoAt).toLocaleDateString()}
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <span className="badge bg-secondary">Sin calificar</span>
-                        )}
-                      </td>
-                      <td style={{ textAlign: 'center', fontSize: '0.9rem', color: '#6b7280' }}>
-                        {new Date(attempt.finishedAt).toLocaleString()}
-                      </td>
-                      <td style={{ textAlign: 'center' }}>
-                        <button
-                          className="modern-btn modern-btn-sm modern-btn-primary"
-                          onClick={() => handleOpenGrading(attempt.id)}
-                          title="Corregir manualmente"
-                        >
-                          <i className="fas fa-edit me-1"></i>
-                          Corregir
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                          ) : (
+                            <span className="text-muted">-</span>
+                          )}
+                        </td>
+                        <td style={{ textAlign: 'center' }}>
+                          {isManuallyGraded ? (
+                            <div>
+                              <span className="badge bg-success" style={{ fontSize: '1rem' }}>
+                                {attempt.calificacionManual}
+                              </span>
+                              {attempt.corregidoAt && (
+                                <div className="small text-muted mt-1">
+                                  {new Date(attempt.corregidoAt).toLocaleDateString()}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="badge bg-warning text-dark">
+                              <i className="fas fa-exclamation-triangle me-1"></i>
+                              Pendiente
+                            </span>
+                          )}
+                        </td>
+                        <td style={{ textAlign: 'center', fontSize: '0.9rem', color: '#6b7280' }}>
+                          {new Date(attempt.finishedAt).toLocaleString()}
+                        </td>
+                        <td style={{ textAlign: 'center' }}>
+                          <button
+                            className={`modern-btn modern-btn-sm ${isManuallyGraded ? 'modern-btn-secondary' : 'modern-btn-primary'}`}
+                            onClick={() => handleOpenGrading(attempt.id)}
+                            title={isManuallyGraded ? "Editar calificación" : "Corregir manualmente"}
+                          >
+                            <i className={`fas ${isManuallyGraded ? 'fa-pencil-alt' : 'fa-edit'} me-1`}></i>
+                            {isManuallyGraded ? 'Editar' : 'Corregir'}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </div>
       </div>
@@ -734,6 +777,13 @@ export default function ExamWindowResultsPage() {
                                     }}>
                                       {item.puntaje !== null ? `${item.puntaje.toFixed(1)}%` : '0.0%'}
                                     </span>
+                                    {item.corregidoManualmente && (
+                                      <i 
+                                        className="fas fa-user-check ms-1" 
+                                        style={{ color: '#10b981', fontSize: '0.9rem' }}
+                                        title="Calificación manual del profesor"
+                                      ></i>
+                                    )}
                                   </div>
                                 </td>
                               )}

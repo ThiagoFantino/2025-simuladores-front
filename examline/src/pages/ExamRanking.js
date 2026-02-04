@@ -401,109 +401,120 @@ const ExamRanking = () => {
                 </tr>
               </thead>
               <tbody>
-                {ranking.map((item) => (
-                  <tr 
-                    key={item.userId}
-                    className={`${getPosicionClass(tipoRanking === 'puntaje' ? item.posicionPuntaje : item.posicionTiempo)} ${item.esUsuarioActual ? 'table-primary' : ''}`}
-                    style={{
-                      backgroundColor: item.esUsuarioActual ? 'rgba(99, 102, 241, 0.1)' : 'transparent',
-                      fontWeight: item.esUsuarioActual ? '600' : 'normal'
-                    }}
-                  >
-                    <td style={{ textAlign: 'center', fontSize: '1.2rem' }}>
-                      {getMedalEmoji(tipoRanking === 'puntaje' ? item.posicionPuntaje : item.posicionTiempo)}
-                    </td>
-                    <td>
-                      <div className="d-flex align-items-center">
-                        <div className="user-avatar me-2" style={{
-                          width: '32px',
-                          height: '32px',
-                          borderRadius: '50%',
-                          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: 'white',
-                          fontWeight: 'bold',
-                          fontSize: '0.9rem'
-                        }}>
-                          {item.nombreEstudiante.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          {item.nombreEstudiante}
-                          {item.esUsuarioActual && (
-                            <span className="badge bg-primary ms-2" style={{ fontSize: '0.7rem' }}>Tú</span>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    {user?.rol === 'professor' && (
-                      <td style={{ fontSize: '0.9rem', color: '#6b7280' }}>
-                        {item.email}
+                {ranking.map((item) => {
+                  const isManuallyGraded = item.corregidoManualmente;
+                  
+                  return (
+                    <tr 
+                      key={item.userId}
+                      className={`${getPosicionClass(tipoRanking === 'puntaje' ? item.posicionPuntaje : item.posicionTiempo)} ${item.esUsuarioActual ? 'table-primary' : ''}`}
+                      style={{
+                        backgroundColor: item.esUsuarioActual ? 'rgba(99, 102, 241, 0.1)' : 'transparent',
+                        fontWeight: item.esUsuarioActual ? '600' : 'normal'
+                      }}
+                    >
+                      <td style={{ textAlign: 'center', fontSize: '1.2rem' }}>
+                        {getMedalEmoji(tipoRanking === 'puntaje' ? item.posicionPuntaje : item.posicionTiempo)}
                       </td>
-                    )}
-                    {tipoRanking === 'puntaje' && (
+                      <td>
+                        <div className="d-flex align-items-center">
+                          <div className="user-avatar me-2" style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '50%',
+                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'white',
+                            fontWeight: 'bold',
+                            fontSize: '0.9rem'
+                          }}>
+                            {item.nombreEstudiante.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            {item.nombreEstudiante}
+                            {item.esUsuarioActual && (
+                              <span className="badge bg-primary ms-2" style={{ fontSize: '0.7rem' }}>Tú</span>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      {user?.rol === 'professor' && (
+                        <td style={{ fontSize: '0.9rem', color: '#6b7280' }}>
+                          {item.email}
+                        </td>
+                      )}
+                      {tipoRanking === 'puntaje' && (
+                        <td style={{ textAlign: 'center' }}>
+                          <div style={{ 
+                            display: 'inline-flex', 
+                            alignItems: 'center', 
+                            gap: '8px',
+                            padding: '8px 16px',
+                            background: item.puntaje >= 70
+                              ? 'rgba(34, 197, 94, 0.1)'
+                              : item.puntaje >= 40
+                              ? 'rgba(251, 191, 36, 0.1)'
+                              : 'rgba(239, 68, 68, 0.1)',
+                            borderRadius: '8px',
+                            fontSize: '1.2rem',
+                            fontWeight: '700'
+                          }}>
+                            <i className="fas fa-star" style={{ 
+                              color: item.puntaje >= 70 ? '#22c55e' : item.puntaje >= 40 ? '#fbbf24' : '#ef4444'
+                            }}></i>
+                            <span style={{ 
+                              color: item.puntaje >= 70 ? '#22c55e' : item.puntaje >= 40 ? '#fbbf24' : '#ef4444'
+                            }}>
+                              {item.puntaje !== null ? `${item.puntaje.toFixed(1)}%` : '0.0%'}
+                            </span>
+                            {isManuallyGraded && (
+                              <i 
+                                className="fas fa-user-check ms-1" 
+                                style={{ color: '#10b981', fontSize: '0.9rem' }}
+                                title="Calificación manual del profesor"
+                              ></i>
+                            )}
+                          </div>
+                        </td>
+                      )}
                       <td style={{ textAlign: 'center' }}>
                         <div style={{ 
                           display: 'inline-flex', 
                           alignItems: 'center', 
                           gap: '8px',
                           padding: '8px 16px',
-                          background: item.puntaje >= 70
-                            ? 'rgba(34, 197, 94, 0.1)'
-                            : item.puntaje >= 40
-                            ? 'rgba(251, 191, 36, 0.1)'
-                            : 'rgba(239, 68, 68, 0.1)',
+                          background: tipoRanking === 'tiempo' && (item.posicionTiempo || item.posicion) <= 3
+                            ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)'
+                            : 'rgba(0,0,0,0.05)',
                           borderRadius: '8px',
-                          fontSize: '1.2rem',
-                          fontWeight: '700'
+                          fontFamily: 'monospace',
+                          fontSize: '1.1rem',
+                          fontWeight: '600'
                         }}>
-                          <i className="fas fa-star" style={{ 
-                            color: item.puntaje >= 70 ? '#22c55e' : item.puntaje >= 40 ? '#fbbf24' : '#ef4444'
+                          <i className="fas fa-stopwatch" style={{ 
+                            color: (tipoRanking === 'tiempo' && (
+                                     (item.posicionTiempo || item.posicion) === 1 ? '#FFD700' : 
+                                     (item.posicionTiempo || item.posicion) === 2 ? '#C0C0C0' : 
+                                     (item.posicionTiempo || item.posicion) === 3 ? '#CD7F32' : 
+                                     'var(--primary-color)'
+                                   )) || '#6b7280'
                           }}></i>
                           <span style={{ 
-                            color: item.puntaje >= 70 ? '#22c55e' : item.puntaje >= 40 ? '#fbbf24' : '#ef4444'
+                            color: tipoRanking === 'tiempo' && (item.posicionTiempo || item.posicion) <= 3 ? 'var(--primary-color)' : '#374151' 
                           }}>
-                            {item.puntaje !== null ? `${item.puntaje.toFixed(1)}%` : '0.0%'}
+                            {item.tiempoFormateado}
                           </span>
                         </div>
                       </td>
-                    )}
-                    <td style={{ textAlign: 'center' }}>
-                      <div style={{ 
-                        display: 'inline-flex', 
-                        alignItems: 'center', 
-                        gap: '8px',
-                        padding: '8px 16px',
-                        background: tipoRanking === 'tiempo' && (item.posicionTiempo || item.posicion) <= 3
-                          ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)'
-                          : 'rgba(0,0,0,0.05)',
-                        borderRadius: '8px',
-                        fontFamily: 'monospace',
-                        fontSize: '1.1rem',
-                        fontWeight: '600'
-                      }}>
-                        <i className="fas fa-stopwatch" style={{ 
-                          color: (tipoRanking === 'tiempo' && (
-                                   (item.posicionTiempo || item.posicion) === 1 ? '#FFD700' : 
-                                   (item.posicionTiempo || item.posicion) === 2 ? '#C0C0C0' : 
-                                   (item.posicionTiempo || item.posicion) === 3 ? '#CD7F32' : 
-                                   'var(--primary-color)'
-                                 )) || '#6b7280'
-                        }}></i>
-                        <span style={{ 
-                          color: tipoRanking === 'tiempo' && (item.posicionTiempo || item.posicion) <= 3 ? 'var(--primary-color)' : '#374151' 
-                        }}>
-                          {item.tiempoFormateado}
-                        </span>
-                      </div>
-                    </td>
-                    <td style={{ textAlign: 'center', fontSize: '0.9rem', color: '#6b7280' }}>
-                      <i className="fas fa-calendar-check me-2"></i>
-                      {new Date(item.fechaFin).toLocaleString()}
-                    </td>
-                  </tr>
-                ))}
+                      <td style={{ textAlign: 'center', fontSize: '0.9rem', color: '#6b7280' }}>
+                        <i className="fas fa-calendar-check me-2"></i>
+                        {new Date(item.fechaFin).toLocaleString()}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
