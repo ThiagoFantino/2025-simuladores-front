@@ -886,6 +886,29 @@ const ProgrammingExamView = () => {
                 <span className="sidebar-text">Programación</span>
               </button>
             </nav>
+            
+            {/* Aviso importante sobre la entrega */}
+            <div style={{
+              padding: '12px',
+              margin: '12px',
+              backgroundColor: '#e3f2fd',
+              border: '1px solid #2196f3',
+              borderLeft: '4px solid #2196f3',
+              borderRadius: '4px',
+              fontSize: '0.85rem'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'start', gap: '8px' }}>
+                <div style={{ flex: 1 }}>
+                  <strong style={{ color: '#1976d2', display: 'block', marginBottom: '6px', fontSize: '0.9rem' }}>
+                    📝 Importante:
+                  </strong>
+                  <div style={{ color: '#0d47a1', lineHeight: '1.4' }}>
+                    Entregar la versión final en el archivo main.py y guardar manualmente antes de finalizar.
+                  </div>
+                </div>
+              </div>
+            </div>
+            
             <div className="sidebar-footer">
               <button
                 className="btn-send-exam"

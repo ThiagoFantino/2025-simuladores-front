@@ -35,10 +35,33 @@ export default function ManualGradingModal({ attemptId, onClose, onSave }) {
         const data = await response.json();
         setAttempt(data);
         
-        // Inicializar código editado con la primera versión disponible
-        const files = fileVersion === 'submission' ? data.submissionFiles : data.manualFiles;
-        if (files && files.length > 0) {
-          setEditedCode(files[0].content || '');
+        // 🔒 IMPORTANTE: Cargar por defecto el archivo main en versión manual
+        // Este es el archivo que se usó para la corrección automática
+        const mainFileName = data.exam.lenguajeProgramacion === 'python' ? 'main.py' : 'main.js';
+        
+        // Intentar encontrar el archivo main en versión manual
+        let targetVersion = 'manual';
+        let targetIndex = data.manualFiles.findIndex(f => f.filename === mainFileName);
+        
+        // Si no existe en manual, buscar en submission
+        if (targetIndex === -1 && data.submissionFiles.length > 0) {
+          targetVersion = 'submission';
+          targetIndex = data.submissionFiles.findIndex(f => f.filename === mainFileName);
+        }
+        
+        // Si aún no se encuentra, usar el primer archivo disponible
+        if (targetIndex === -1) {
+          targetVersion = data.manualFiles.length > 0 ? 'manual' : 'submission';
+          targetIndex = 0;
+        }
+        
+        // Configurar el estado inicial
+        setFileVersion(targetVersion);
+        setSelectedFileIndex(targetIndex);
+        
+        const files = targetVersion === 'manual' ? data.manualFiles : data.submissionFiles;
+        if (files && files.length > 0 && files[targetIndex]) {
+          setEditedCode(files[targetIndex].content || '');
         }
 
         // Pre-llenar calificación manual si ya existe
@@ -264,6 +287,27 @@ export default function ManualGradingModal({ attemptId, onClose, onSave }) {
           {/* Para exámenes de programación */}
           {attempt.exam.tipo === 'programming' && (
             <>
+              {/* Aviso sobre corrección automática */}
+              <div className="alert alert-warning mb-3" style={{
+                backgroundColor: '#fff3cd',
+                border: '1px solid #ffc107',
+                borderLeft: '4px solid #ffc107',
+                borderRadius: '4px',
+                padding: '12px 16px'
+              }}>
+                <div className="d-flex align-items-start gap-2">
+                  <i className="fas fa-robot" style={{ color: '#ff9800', fontSize: '1.2rem', marginTop: '2px' }}></i>
+                  <div style={{ flex: 1 }}>
+                    <strong style={{ color: '#f57c00', display: 'block', marginBottom: '4px' }}>
+                      🤖 Corrección Automática:
+                    </strong>
+                    <div style={{ color: '#e65100', fontSize: '0.9rem' }}>
+                      El puntaje automático se calculó sobre el archivo <strong>{attempt.exam.lenguajeProgramacion === 'python' ? 'main.py' : 'main.js'}</strong> guardado manualmente por el estudiante (versión "Guardados Manuales").
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
               {/* Enunciado */}
               <div className="modern-card mb-3">
                 <div className="modern-card-header">
