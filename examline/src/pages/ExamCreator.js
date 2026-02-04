@@ -38,12 +38,11 @@ const ExamCreator = () => {
   const [newReferenceFileName, setNewReferenceFileName] = useState('');
   const [referenceFileToDelete, setReferenceFileToDelete] = useState('');
   const [showDeleteReferenceFileModal, setShowDeleteReferenceFileModal] = useState(false);
+  const [saveReferenceSolution, setSaveReferenceSolution] = useState(false);
   
-  const [codigoTemporal, setCodigoTemporal] = useState("");
   const [testResults, setTestResults] = useState(null);
   const [isRunningTests, setIsRunningTests] = useState(false);
   const [showTestPanel, setShowTestPanel] = useState(false);
-  const [activeTab, setActiveTab] = useState('temporal'); // 'temporal' | 'reference'
   
   const [error, setError] = useState("");
   const [isPublishing, setIsPublishing] = useState(false);
@@ -187,70 +186,13 @@ const ExamCreator = () => {
     setTestCases(updatedTestCases);
   };
 
-  // Función para ejecutar tests contra código temporal
-  const handleRunTestsTemporary = async () => {
-    console.log('Ejecutando tests temporales...');
-    console.log('Código:', codigoTemporal);
-    console.log('Test cases:', testCases);
-    console.log('Lenguaje:', lenguajeProgramacion);
-    
-    if (!codigoTemporal.trim()) {
-      const errorMsg = "Debes ingresar código para probar";
-      setError(errorMsg);
-      console.error('Validación falló:', errorMsg);
-      alert(errorMsg);
-      return;
-    }
-
-    if (testCases.length === 0) {
-      const errorMsg = "No hay test cases configurados";
-      setError(errorMsg);
-      console.error('Validación falló:', errorMsg);
-      alert(errorMsg);
-      return;
-    }
-
-    // Validar que todos los test cases tengan al menos expectedOutput
-    const invalidTests = testCases.filter(tc => !tc.expectedOutput || !tc.expectedOutput.trim());
-    if (invalidTests.length > 0) {
-      const errorMsg = `Hay ${invalidTests.length} test case(s) sin output esperado. Por favor completa todos los test cases antes de ejecutar.`;
-      setError(errorMsg);
-      console.error('Validación falló:', errorMsg);
-      console.error('Test cases inválidos:', invalidTests);
-      alert(errorMsg);
-      // Scroll hacia arriba para mostrar el error
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
-    }
-
-    setIsRunningTests(true);
-    setError("");
-    
-    try {
-      console.log('Llamando a testSolutionPreview...');
-      // Filtrar solo los test cases válidos (con expectedOutput)
-      const validTestCases = testCases.filter(tc => tc.expectedOutput && tc.expectedOutput.trim());
-      const results = await testSolutionPreview(codigoTemporal, lenguajeProgramacion, validTestCases);
-      console.log('Resultados:', results);
-      setTestResults(results);
-      setShowTestPanel(true);
-    } catch (err) {
-      console.error("Error ejecutando tests:", err);
-      const errorMsg = err.message || "Error al ejecutar tests";
-      setError(errorMsg);
-      alert(errorMsg);
-    } finally {
-      setIsRunningTests(false);
-    }
-  };
-
-  // Función para ejecutar tests contra solución de referencia
+  // Función para ejecutar tests contra la solución de referencia
   const handleRunTestsReference = async () => {
     console.log('Ejecutando tests con solución de referencia...');
     
     const currentFile = referenceFiles.find(f => f.filename === currentReferenceFile);
     if (!currentFile || !currentFile.content.trim()) {
-      const errorMsg = "Debes ingresar código en la solución de referencia para probar";
+      const errorMsg = "Debes ingresar código en el archivo actual para probar";
       setError(errorMsg);
       console.error('Validación falló:', errorMsg);
       alert(errorMsg);
@@ -316,7 +258,10 @@ const ExamCreator = () => {
         examData.enunciadoProgramacion = enunciadoProgramacion;
         examData.codigoInicial = codigoInicial;
         examData.testCases = testCases;
-        examData.referenceFiles = referenceFiles; // Enviar archivos de referencia
+        // Solo enviar archivos de referencia si el profesor eligió guardarlos
+        if (saveReferenceSolution) {
+          examData.referenceFiles = referenceFiles;
+        }
       }
 
       await createExam(examData);
@@ -666,141 +611,20 @@ const ExamCreator = () => {
               </h3>
             </div>
             <div className="modern-card-body">
-              <div className="alert alert-warning mb-3">
+              <div className="alert alert-info mb-3">
                 <i className="fas fa-lock me-2"></i>
                 <strong>Privado - Solo visible para el profesor</strong>
                 <ul className="mb-0 mt-2">
-                  <li>Usa estas herramientas para validar que tus tests funcionan correctamente</li>
-                  <li>La solución de referencia y los resultados NUNCA serán visibles para los estudiantes</li>
-                  <li>Puedes probar código temporal o guardar una solución de referencia</li>
+                  <li>Escribe tu solución aquí para validar que tus tests funcionan correctamente</li>
+                  <li>Esta solución y los resultados NUNCA serán visibles para los estudiantes</li>
+                  <li>Puedes probar el código sin guardarlo, o guardarlo junto con el examen</li>
+                  <li>Soporta múltiples archivos para soluciones más complejas</li>
                 </ul>
               </div>
 
-              {/* Tabs para seleccionar entre código temporal y solución de referencia */}
-              <ul className="nav nav-tabs mb-3" role="tablist">
-                <li className="nav-item" role="presentation">
-                  <button 
-                    className={`nav-link ${activeTab === 'temporal' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('temporal')}
-                    type="button"
-                  >
-                    <i className="fas fa-flask me-2"></i>
-                    Código Temporal
-                  </button>
-                </li>
-                <li className="nav-item" role="presentation">
-                  <button 
-                    className={`nav-link ${activeTab === 'reference' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('reference')}
-                    type="button"
-                  >
-                    <i className="fas fa-save me-2"></i>
-                    Solución de Referencia
-                  </button>
-                </li>
-              </ul>
-
-              <div className="tab-content">
-                {/* Tab de Código Temporal */}
-                {activeTab === 'temporal' && (
-                  <div className="tab-pane-custom fade show active">
-                    <div style={{ 
-                      border: '1px solid #dee2e6', 
-                      borderRadius: '8px', 
-                      overflow: 'hidden',
-                      backgroundColor: '#1e1e1e'
-                    }}>
-                    {/* Header del editor */}
-                    <div style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '8px 16px',
-                      backgroundColor: '#2d2d30',
-                      borderBottom: '1px solid #3e3e42',
-                      color: '#cccccc'
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <i className="fas fa-file-code"></i>
-                        <span style={{ fontSize: '14px', fontWeight: '500' }}>
-                          prueba.{lenguajeProgramacion === 'python' ? 'py' : 'js'}
-                        </span>
-                      </div>
-                      <button
-                        type="button"
-                        className="btn btn-sm btn-primary"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleRunTestsTemporary();
-                        }}
-                        disabled={isRunningTests || !codigoTemporal.trim()}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          fontSize: '13px'
-                        }}
-                      >
-                        {isRunningTests ? (
-                          <>
-                            <div className="spinner-border spinner-border-sm" role="status"></div>
-                            Ejecutando...
-                          </>
-                        ) : (
-                          <>
-                            <i className="fas fa-play"></i>
-                            Ejecutar Tests
-                          </>
-                        )}
-                      </button>
-                    </div>
-                    
-                    {/* Editor Monaco */}
-                    <Editor
-                      height="500px"
-                      language={lenguajeProgramacion}
-                      value={codigoTemporal}
-                      onChange={(value) => setCodigoTemporal(value || '')}
-                      theme="vs-dark"
-                      options={{
-                        selectOnLineNumbers: true,
-                        roundedSelection: false,
-                        readOnly: false,
-                        cursorStyle: 'line',
-                        automaticLayout: true,
-                        scrollBeyondLastLine: false,
-                        minimap: { enabled: true },
-                        fontSize: 14,
-                        lineNumbers: 'on',
-                        wordWrap: 'on',
-                        tabSize: lenguajeProgramacion === 'python' ? 4 : 2,
-                        quickSuggestions: intellisenseHabilitado,
-                        suggestOnTriggerCharacters: intellisenseHabilitado,
-                        parameterHints: { enabled: intellisenseHabilitado },
-                        suggest: {
-                          showMethods: intellisenseHabilitado,
-                          showFunctions: intellisenseHabilitado,
-                          showConstructors: intellisenseHabilitado,
-                          showFields: intellisenseHabilitado,
-                          showVariables: intellisenseHabilitado,
-                          showClasses: intellisenseHabilitado,
-                          showKeywords: intellisenseHabilitado
-                        }
-                      }}
-                    />
-                  </div>
-                  <small className="form-text text-muted d-block mt-2">
-                    <i className="fas fa-info-circle me-1"></i>
-                    Este código es temporal y no se guardará. Úsalo para probar rápidamente tus tests.
-                  </small>
-                </div>
-                )}
-
-                {/* Tab de Solución de Referencia - Sistema Multi-archivo */}
-                {activeTab === 'reference' && (
-                  <div className="tab-pane-custom fade show active">
-                    <div style={{ 
+              {/* Solución de Referencia - Sistema Multi-archivo */}
+              <div className="tab-pane-custom fade show active">
+                <div style={{ 
                       border: '1px solid #dee2e6', 
                       borderRadius: '8px', 
                       overflow: 'hidden',
@@ -967,14 +791,47 @@ const ExamCreator = () => {
                         }}
                       />
                     </div>
-                    <small className="form-text text-muted d-block mt-2">
-                      <i className="fas fa-lock me-1"></i>
-                      Esta solución se guardará con el examen y solo será visible para ti.
-                      Te permite validar que tus tests están correctos. Puedes crear múltiples archivos.
-                    </small>
+                    
+                    {/* Toggle para guardar solución de referencia */}
+                    <div className="mt-3 p-3" style={{
+                      backgroundColor: '#f8f9fa',
+                      borderRadius: '8px',
+                      border: '1px solid #dee2e6'
+                    }}>
+                      <div className="d-flex align-items-center justify-content-between">
+                        <div style={{ flex: 1 }}>
+                          <div className="d-flex align-items-center gap-2 mb-1">
+                            <i className="fas fa-save" style={{ color: '#6c757d' }}></i>
+                            <strong style={{ fontSize: '0.95rem' }}>Guardar esta solución con el examen</strong>
+                          </div>
+                          <small className="text-muted" style={{ display: 'block', marginLeft: '26px' }}>
+                            La solución guardada solo será visible para ti y te servirá como referencia.
+                            Puedes probar el código sin necesidad de guardarlo.
+                          </small>
+                        </div>
+                        
+                        {/* Toggle Switch */}
+                        <div className="form-check form-switch" style={{ 
+                          paddingLeft: 0,
+                          marginLeft: '1rem'
+                        }}>
+                          <input
+                            className="form-check-input"
+                            type="checkbox"
+                            role="switch"
+                            id="saveReferenceSolutionToggle"
+                            checked={saveReferenceSolution}
+                            onChange={(e) => setSaveReferenceSolution(e.target.checked)}
+                            style={{
+                              width: '3rem',
+                              height: '1.5rem',
+                              cursor: 'pointer'
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                )}
-              </div>
 
               {/* Panel de Resultados de Tests */}
               {showTestPanel && testResults && (
