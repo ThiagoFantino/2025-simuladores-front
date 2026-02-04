@@ -1,5 +1,5 @@
 // src/pages/ExamCreator.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import Editor from '@monaco-editor/react';
@@ -8,37 +8,53 @@ import BackToMainButton from "../components/BackToMainButton";
 import Modal from "../components/Modal";
 import { createExam, testSolutionPreview } from "../services/api";
 
+const DRAFT_KEY = 'examCreatorDraft';
+
 const ExamCreator = () => {
   const navigate = useNavigate();
   const { modal, showModal, closeModal } = useModal();
-  const [titulo, setTitulo] = useState("");
-  const [tipoExamen, setTipoExamen] = useState("multiple_choice"); // "multiple_choice" | "programming"
+  
+  // Cargar borrador desde localStorage
+  const loadDraft = () => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      return saved ? JSON.parse(saved) : null;
+    } catch (err) {
+      console.error('Error cargando borrador:', err);
+      return null;
+    }
+  };
+  
+  const draft = loadDraft();
+  
+  const [titulo, setTitulo] = useState(draft?.titulo || "");
+  const [tipoExamen, setTipoExamen] = useState(draft?.tipoExamen || "multiple_choice");
   
   // Estados para exámenes de multiple choice
-  const [preguntas, setPreguntas] = useState([]);
-  const [textoPregunta, setTextoPregunta] = useState("");
-  const [opciones, setOpciones] = useState(["", ""]);
-  const [correcta, setCorrecta] = useState(0);
+  const [preguntas, setPreguntas] = useState(draft?.preguntas || []);
+  const [textoPregunta, setTextoPregunta] = useState(draft?.textoPregunta || "");
+  const [opciones, setOpciones] = useState(draft?.opciones || ["", ""]);
+  const [correcta, setCorrecta] = useState(draft?.correcta || 0);
   
   // Estados para exámenes de programación
-  const [lenguajeProgramacion, setLenguajeProgramacion] = useState("python");
-  const [intellisenseHabilitado, setIntellisenseHabilitado] = useState(false);
-  const [enunciadoProgramacion, setEnunciadoProgramacion] = useState("");
-  const [codigoInicial, setCodigoInicial] = useState("");
-  const [testCases, setTestCases] = useState([
+  const [lenguajeProgramacion, setLenguajeProgramacion] = useState(draft?.lenguajeProgramacion || "python");
+  const [intellisenseHabilitado, setIntellisenseHabilitado] = useState(draft?.intellisenseHabilitado || false);
+  const [enunciadoProgramacion, setEnunciadoProgramacion] = useState(draft?.enunciadoProgramacion || "");
+  const [codigoInicial, setCodigoInicial] = useState(draft?.codigoInicial || "");
+  const [testCases, setTestCases] = useState(draft?.testCases || [
     { description: "", input: "", expectedOutput: "" }
   ]);
   
   // Estados para solución de referencia multi-archivo
-  const [referenceFiles, setReferenceFiles] = useState([
+  const [referenceFiles, setReferenceFiles] = useState(draft?.referenceFiles || [
     { filename: 'main.py', content: '' }
   ]);
-  const [currentReferenceFile, setCurrentReferenceFile] = useState('main.py');
+  const [currentReferenceFile, setCurrentReferenceFile] = useState(draft?.currentReferenceFile || 'main.py');
   const [showNewReferenceFileModal, setShowNewReferenceFileModal] = useState(false);
   const [newReferenceFileName, setNewReferenceFileName] = useState('');
   const [referenceFileToDelete, setReferenceFileToDelete] = useState('');
   const [showDeleteReferenceFileModal, setShowDeleteReferenceFileModal] = useState(false);
-  const [saveReferenceSolution, setSaveReferenceSolution] = useState(false);
+  const [saveReferenceSolution, setSaveReferenceSolution] = useState(draft?.saveReferenceSolution || false);
   
   const [testResults, setTestResults] = useState(null);
   const [isRunningTests, setIsRunningTests] = useState(false);
@@ -46,6 +62,70 @@ const ExamCreator = () => {
   
   const [error, setError] = useState("");
   const [isPublishing, setIsPublishing] = useState(false);
+  const [hasDraft, setHasDraft] = useState(!!draft);
+
+  // Autoguardado: guardar en localStorage cuando cambien los estados importantes
+  useEffect(() => {
+    const draftData = {
+      titulo,
+      tipoExamen,
+      preguntas,
+      textoPregunta,
+      opciones,
+      correcta,
+      lenguajeProgramacion,
+      intellisenseHabilitado,
+      enunciadoProgramacion,
+      codigoInicial,
+      testCases,
+      referenceFiles,
+      currentReferenceFile,
+      saveReferenceSolution,
+      savedAt: new Date().toISOString()
+    };
+    
+    // Solo guardar si hay contenido
+    const hasContent = titulo || preguntas.length > 0 || enunciadoProgramacion || 
+                      testCases.some(tc => tc.description || tc.input || tc.expectedOutput) ||
+                      referenceFiles.some(f => f.content);
+    
+    if (hasContent) {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draftData));
+      setHasDraft(true);
+    }
+  }, [titulo, tipoExamen, preguntas, textoPregunta, opciones, correcta, 
+      lenguajeProgramacion, intellisenseHabilitado, enunciadoProgramacion, 
+      codigoInicial, testCases, referenceFiles, currentReferenceFile, saveReferenceSolution]);
+
+  // Función para descartar borrador
+  const handleDiscardDraft = () => {
+    showModal(
+      'confirm',
+      '🗑️ Descartar Borrador',
+      '¿Estás seguro de que deseas descartar el borrador actual? Esta acción no se puede deshacer.',
+      () => {
+        localStorage.removeItem(DRAFT_KEY);
+        // Resetear todos los estados
+        setTitulo("");
+        setTipoExamen("multiple_choice");
+        setPreguntas([]);
+        setTextoPregunta("");
+        setOpciones(["", ""]);
+        setCorrecta(0);
+        setLenguajeProgramacion("python");
+        setIntellisenseHabilitado(false);
+        setEnunciadoProgramacion("");
+        setCodigoInicial("");
+        setTestCases([{ description: "", input: "", expectedOutput: "" }]);
+        setReferenceFiles([{ filename: 'main.py', content: '' }]);
+        setCurrentReferenceFile('main.py');
+        setSaveReferenceSolution(false);
+        setHasDraft(false);
+        closeModal();
+      },
+      true
+    );
+  };
 
   // Efecto para actualizar extensión de archivos cuando cambia el lenguaje
   React.useEffect(() => {
@@ -266,6 +346,9 @@ const ExamCreator = () => {
 
       await createExam(examData);
       
+      // Limpiar borrador al publicar exitosamente
+      localStorage.removeItem(DRAFT_KEY);
+      
       // Volver a la Página Principal
       navigate("/principal");
     } catch (err) {
@@ -324,10 +407,26 @@ const ExamCreator = () => {
               <h1 className="page-title mb-1">
                 <i className="fas fa-plus-circle me-2" style={{ color: 'var(--primary-color)' }}></i>
                 <span className="title-text">Crear Examen</span>
+                {hasDraft && (
+                  <span className="badge bg-info ms-2" style={{ fontSize: '0.6em', verticalAlign: 'middle' }}>
+                    <i className="fas fa-save me-1"></i>
+                    Borrador guardado
+                  </span>
+                )}
               </h1>
               <p className="page-subtitle mb-0">Diseña un nuevo examen con preguntas personalizadas</p>
             </div>
-            <div className="exam-creator-actions">
+            <div className="exam-creator-actions" style={{ display: 'flex', gap: '0.5rem' }}>
+              {hasDraft && (
+                <button
+                  className="modern-btn modern-btn-danger compact-btn"
+                  onClick={handleDiscardDraft}
+                  title="Descartar borrador"
+                >
+                  <i className="fas fa-trash me-2"></i>
+                  <span className="btn-text">Descartar</span>
+                </button>
+              )}
               <BackToMainButton />
             </div>
           </div>
