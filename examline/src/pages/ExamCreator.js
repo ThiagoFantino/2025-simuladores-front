@@ -2,10 +2,11 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
+import Editor from '@monaco-editor/react';
 import { useModal } from "../hooks";
 import BackToMainButton from "../components/BackToMainButton";
 import Modal from "../components/Modal";
-import { createExam } from "../services/api";
+import { createExam, testSolutionPreview } from "../services/api";
 
 const ExamCreator = () => {
   const navigate = useNavigate();
@@ -27,6 +28,12 @@ const ExamCreator = () => {
   const [testCases, setTestCases] = useState([
     { description: "", input: "", expectedOutput: "" }
   ]);
+  const [solucionReferencia, setSolucionReferencia] = useState("");
+  const [codigoTemporal, setCodigoTemporal] = useState("");
+  const [testResults, setTestResults] = useState(null);
+  const [isRunningTests, setIsRunningTests] = useState(false);
+  const [showTestPanel, setShowTestPanel] = useState(false);
+  const [activeTab, setActiveTab] = useState('temporal'); // 'temporal' | 'reference'
   
   const [error, setError] = useState("");
   const [isPublishing, setIsPublishing] = useState(false);
@@ -96,6 +103,114 @@ const ExamCreator = () => {
     setTestCases(updatedTestCases);
   };
 
+  // Función para ejecutar tests contra código temporal
+  const handleRunTestsTemporary = async () => {
+    console.log('Ejecutando tests temporales...');
+    console.log('Código:', codigoTemporal);
+    console.log('Test cases:', testCases);
+    console.log('Lenguaje:', lenguajeProgramacion);
+    
+    if (!codigoTemporal.trim()) {
+      const errorMsg = "Debes ingresar código para probar";
+      setError(errorMsg);
+      console.error('Validación falló:', errorMsg);
+      alert(errorMsg);
+      return;
+    }
+
+    if (testCases.length === 0) {
+      const errorMsg = "No hay test cases configurados";
+      setError(errorMsg);
+      console.error('Validación falló:', errorMsg);
+      alert(errorMsg);
+      return;
+    }
+
+    // Validar que todos los test cases tengan al menos expectedOutput
+    const invalidTests = testCases.filter(tc => !tc.expectedOutput || !tc.expectedOutput.trim());
+    if (invalidTests.length > 0) {
+      const errorMsg = `Hay ${invalidTests.length} test case(s) sin output esperado. Por favor completa todos los test cases antes de ejecutar.`;
+      setError(errorMsg);
+      console.error('Validación falló:', errorMsg);
+      console.error('Test cases inválidos:', invalidTests);
+      alert(errorMsg);
+      // Scroll hacia arriba para mostrar el error
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    setIsRunningTests(true);
+    setError("");
+    
+    try {
+      console.log('Llamando a testSolutionPreview...');
+      // Filtrar solo los test cases válidos (con expectedOutput)
+      const validTestCases = testCases.filter(tc => tc.expectedOutput && tc.expectedOutput.trim());
+      const results = await testSolutionPreview(codigoTemporal, lenguajeProgramacion, validTestCases);
+      console.log('Resultados:', results);
+      setTestResults(results);
+      setShowTestPanel(true);
+    } catch (err) {
+      console.error("Error ejecutando tests:", err);
+      const errorMsg = err.message || "Error al ejecutar tests";
+      setError(errorMsg);
+      alert(errorMsg);
+    } finally {
+      setIsRunningTests(false);
+    }
+  };
+
+  // Función para ejecutar tests contra solución de referencia
+  const handleRunTestsReference = async () => {
+    console.log('Ejecutando tests con solución de referencia...');
+    
+    if (!solucionReferencia.trim()) {
+      const errorMsg = "Debes ingresar una solución de referencia para probar";
+      setError(errorMsg);
+      console.error('Validación falló:', errorMsg);
+      alert(errorMsg);
+      return;
+    }
+
+    if (testCases.length === 0) {
+      const errorMsg = "No hay test cases configurados";
+      setError(errorMsg);
+      console.error('Validación falló:', errorMsg);
+      alert(errorMsg);
+      return;
+    }
+
+    const invalidTests = testCases.filter(tc => !tc.expectedOutput || !tc.expectedOutput.trim());
+    if (invalidTests.length > 0) {
+      const errorMsg = `Hay ${invalidTests.length} test case(s) sin output esperado. Por favor completa todos los test cases antes de ejecutar.`;
+      setError(errorMsg);
+      console.error('Validación falló:', errorMsg);
+      console.error('Test cases inválidos:', invalidTests);
+      alert(errorMsg);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    setIsRunningTests(true);
+    setError("");
+    
+    try {
+      console.log('Llamando a testSolutionPreview...');
+      const validTestCases = testCases.filter(tc => tc.expectedOutput && tc.expectedOutput.trim());
+      const results = await testSolutionPreview(solucionReferencia, lenguajeProgramacion, validTestCases);
+      console.log('Resultados:', results);
+      setTestResults(results);
+      setShowTestPanel(true);
+    } catch (err) {
+      console.error("Error ejecutando tests:", err);
+      const errorMsg = err.message || "Error al ejecutar tests";
+      setError(errorMsg);
+      alert(errorMsg);
+    } finally {
+      setIsRunningTests(false);
+    }
+  };
+
   // Función que realmente publica el examen
   const proceedWithPublishing = async () => {
     setIsPublishing(true);
@@ -114,6 +229,7 @@ const ExamCreator = () => {
         examData.enunciadoProgramacion = enunciadoProgramacion;
         examData.codigoInicial = codigoInicial;
         examData.testCases = testCases;
+        examData.solucionReferencia = solucionReferencia;
       }
 
       await createExam(examData);
@@ -449,6 +565,344 @@ const ExamCreator = () => {
                   El puntaje se calcula automáticamente.
                 </small>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Solución de Referencia y Testing - Solo para exámenes de programación */}
+        {tipoExamen === "programming" && testCases.length > 0 && (
+          <div className="modern-card mb-4">
+            <div className="modern-card-header">
+              <h3 className="modern-card-title">
+                <i className="fas fa-check-double me-2"></i>
+                Validar Tests (Herramientas del Profesor)
+              </h3>
+            </div>
+            <div className="modern-card-body">
+              <div className="alert alert-warning mb-3">
+                <i className="fas fa-lock me-2"></i>
+                <strong>Privado - Solo visible para el profesor</strong>
+                <ul className="mb-0 mt-2">
+                  <li>Usa estas herramientas para validar que tus tests funcionan correctamente</li>
+                  <li>La solución de referencia y los resultados NUNCA serán visibles para los estudiantes</li>
+                  <li>Puedes probar código temporal o guardar una solución de referencia</li>
+                </ul>
+              </div>
+
+              {/* Tabs para seleccionar entre código temporal y solución de referencia */}
+              <ul className="nav nav-tabs mb-3" role="tablist">
+                <li className="nav-item" role="presentation">
+                  <button 
+                    className={`nav-link ${activeTab === 'temporal' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('temporal')}
+                    type="button"
+                  >
+                    <i className="fas fa-flask me-2"></i>
+                    Código Temporal
+                  </button>
+                </li>
+                <li className="nav-item" role="presentation">
+                  <button 
+                    className={`nav-link ${activeTab === 'reference' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('reference')}
+                    type="button"
+                  >
+                    <i className="fas fa-save me-2"></i>
+                    Solución de Referencia
+                  </button>
+                </li>
+              </ul>
+
+              <div className="tab-content">
+                {/* Tab de Código Temporal */}
+                {activeTab === 'temporal' && (
+                  <div className="tab-pane-custom fade show active">
+                    <div style={{ 
+                      border: '1px solid #dee2e6', 
+                      borderRadius: '8px', 
+                      overflow: 'hidden',
+                      backgroundColor: '#1e1e1e'
+                    }}>
+                    {/* Header del editor */}
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '8px 16px',
+                      backgroundColor: '#2d2d30',
+                      borderBottom: '1px solid #3e3e42',
+                      color: '#cccccc'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <i className="fas fa-file-code"></i>
+                        <span style={{ fontSize: '14px', fontWeight: '500' }}>
+                          prueba.{lenguajeProgramacion === 'python' ? 'py' : 'js'}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-primary"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleRunTestsTemporary();
+                        }}
+                        disabled={isRunningTests || !codigoTemporal.trim()}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          fontSize: '13px'
+                        }}
+                      >
+                        {isRunningTests ? (
+                          <>
+                            <div className="spinner-border spinner-border-sm" role="status"></div>
+                            Ejecutando...
+                          </>
+                        ) : (
+                          <>
+                            <i className="fas fa-play"></i>
+                            Ejecutar Tests
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    
+                    {/* Editor Monaco */}
+                    <Editor
+                      height="500px"
+                      language={lenguajeProgramacion}
+                      value={codigoTemporal}
+                      onChange={(value) => setCodigoTemporal(value || '')}
+                      theme="vs-dark"
+                      options={{
+                        selectOnLineNumbers: true,
+                        roundedSelection: false,
+                        readOnly: false,
+                        cursorStyle: 'line',
+                        automaticLayout: true,
+                        scrollBeyondLastLine: false,
+                        minimap: { enabled: true },
+                        fontSize: 14,
+                        lineNumbers: 'on',
+                        wordWrap: 'on',
+                        tabSize: lenguajeProgramacion === 'python' ? 4 : 2,
+                        quickSuggestions: intellisenseHabilitado,
+                        suggestOnTriggerCharacters: intellisenseHabilitado,
+                        parameterHints: { enabled: intellisenseHabilitado },
+                        suggest: {
+                          showMethods: intellisenseHabilitado,
+                          showFunctions: intellisenseHabilitado,
+                          showConstructors: intellisenseHabilitado,
+                          showFields: intellisenseHabilitado,
+                          showVariables: intellisenseHabilitado,
+                          showClasses: intellisenseHabilitado,
+                          showKeywords: intellisenseHabilitado
+                        }
+                      }}
+                    />
+                  </div>
+                  <small className="form-text text-muted d-block mt-2">
+                    <i className="fas fa-info-circle me-1"></i>
+                    Este código es temporal y no se guardará. Úsalo para probar rápidamente tus tests.
+                  </small>
+                </div>
+                )}
+
+                {/* Tab de Solución de Referencia */}
+                {activeTab === 'reference' && (
+                  <div className="tab-pane-custom fade show active">
+                    <div style={{ 
+                      border: '1px solid #dee2e6', 
+                      borderRadius: '8px', 
+                      overflow: 'hidden',
+                      backgroundColor: '#1e1e1e'
+                    }}>
+                    {/* Header del editor */}
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '8px 16px',
+                      backgroundColor: '#2d2d30',
+                      borderBottom: '1px solid #3e3e42',
+                      color: '#cccccc'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <i className="fas fa-star" style={{ color: '#ffd700' }}></i>
+                        <span style={{ fontSize: '14px', fontWeight: '500' }}>
+                          solucion_referencia.{lenguajeProgramacion === 'python' ? 'py' : 'js'}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-success"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleRunTestsReference();
+                        }}
+                        disabled={isRunningTests || !solucionReferencia.trim()}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          fontSize: '13px'
+                        }}
+                      >
+                        {isRunningTests ? (
+                          <>
+                            <div className="spinner-border spinner-border-sm" role="status"></div>
+                            Ejecutando...
+                          </>
+                        ) : (
+                          <>
+                            <i className="fas fa-play"></i>
+                            Ejecutar Tests
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    
+                    {/* Editor Monaco */}
+                    <Editor
+                      height="500px"
+                      language={lenguajeProgramacion}
+                      value={solucionReferencia}
+                      onChange={(value) => setSolucionReferencia(value || '')}
+                      theme="vs-dark"
+                      options={{
+                        selectOnLineNumbers: true,
+                        roundedSelection: false,
+                        readOnly: false,
+                        cursorStyle: 'line',
+                        automaticLayout: true,
+                        scrollBeyondLastLine: false,
+                        minimap: { enabled: true },
+                        fontSize: 14,
+                        lineNumbers: 'on',
+                        wordWrap: 'on',
+                        tabSize: lenguajeProgramacion === 'python' ? 4 : 2,
+                        quickSuggestions: intellisenseHabilitado,
+                        suggestOnTriggerCharacters: intellisenseHabilitado,
+                        parameterHints: { enabled: intellisenseHabilitado },
+                        suggest: {
+                          showMethods: intellisenseHabilitado,
+                          showFunctions: intellisenseHabilitado,
+                          showConstructors: intellisenseHabilitado,
+                          showFields: intellisenseHabilitado,
+                          showVariables: intellisenseHabilitado,
+                          showClasses: intellisenseHabilitado,
+                          showKeywords: intellisenseHabilitado
+                        }
+                      }}
+                    />
+                  </div>
+                  <small className="form-text text-muted d-block mt-2">
+                    <i className="fas fa-lock me-1"></i>
+                    Esta solución se guardará con el examen y solo será visible para ti.
+                    Te permite validar que tus tests están correctos.
+                  </small>
+                </div>
+                )}
+              </div>
+
+              {/* Panel de Resultados de Tests */}
+              {showTestPanel && testResults && (
+                <div className="mt-4">
+                  <h5 className="mb-3">
+                    <i className="fas fa-chart-bar me-2"></i>
+                    Resultados de la Ejecución
+                  </h5>
+                  
+                  <div className={`alert ${testResults.score === 100 ? 'alert-success' : testResults.score >= 50 ? 'alert-warning' : 'alert-danger'}`}>
+                    <div className="d-flex justify-content-between align-items-center">
+                      <div>
+                        <strong>Puntaje: {testResults.score.toFixed(1)}%</strong>
+                        <br />
+                        <small>
+                          {testResults.passedTests} de {testResults.totalTests} tests pasados
+                        </small>
+                      </div>
+                      <div>
+                        {testResults.score === 100 ? (
+                          <i className="fas fa-check-circle fa-2x text-success"></i>
+                        ) : (
+                          <i className="fas fa-exclamation-triangle fa-2x text-warning"></i>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {testResults.testResults.map((result, index) => (
+                    <div key={index} className="card mb-2" style={{ border: `2px solid ${result.passed ? '#28a745' : '#dc3545'}` }}>
+                      <div className="card-header d-flex justify-content-between align-items-center" 
+                           style={{ backgroundColor: result.passed ? '#d4edda' : '#f8d7da' }}>
+                        <strong>
+                          {result.passed ? (
+                            <i className="fas fa-check-circle text-success me-2"></i>
+                          ) : (
+                            <i className="fas fa-times-circle text-danger me-2"></i>
+                          )}
+                          Test {index + 1}: {result.description || `Test Case ${index + 1}`}
+                        </strong>
+                        <span className="badge" style={{ 
+                          backgroundColor: result.passed ? '#28a745' : '#dc3545',
+                          color: 'white'
+                        }}>
+                          {result.passed ? 'PASÓ' : 'FALLÓ'}
+                        </span>
+                      </div>
+                      <div className="card-body">
+                        {result.input && (
+                          <div className="mb-2">
+                            <strong>Input:</strong>
+                            <pre className="mb-0 p-2" style={{ 
+                              backgroundColor: '#f8f9fa', 
+                              borderRadius: '4px',
+                              fontSize: '0.85rem'
+                            }}>{result.input}</pre>
+                          </div>
+                        )}
+                        <div className="row">
+                          <div className="col-md-6 mb-2">
+                            <strong>Output Esperado:</strong>
+                            <pre className="mb-0 p-2" style={{ 
+                              backgroundColor: '#e7f5e7', 
+                              borderRadius: '4px',
+                              fontSize: '0.85rem',
+                              border: '1px solid #c3e6c3'
+                            }}>{result.expectedOutput}</pre>
+                          </div>
+                          <div className="col-md-6 mb-2">
+                            <strong>Output Obtenido:</strong>
+                            <pre className="mb-0 p-2" style={{ 
+                              backgroundColor: result.passed ? '#e7f5e7' : '#f8d7da', 
+                              borderRadius: '4px',
+                              fontSize: '0.85rem',
+                              border: `1px solid ${result.passed ? '#c3e6c3' : '#f5c6cb'}`
+                            }}>{result.actualOutput || '(sin output)'}</pre>
+                          </div>
+                        </div>
+                        {result.error && (
+                          <div className="mt-2">
+                            <strong className="text-danger">Error:</strong>
+                            <pre className="mb-0 p-2 text-danger" style={{ 
+                              backgroundColor: '#fff3cd', 
+                              borderRadius: '4px',
+                              fontSize: '0.85rem'
+                            }}>{result.error}</pre>
+                          </div>
+                        )}
+                        <small className="text-muted d-block mt-2">
+                          Tiempo de ejecución: {result.executionTime}ms
+                        </small>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
