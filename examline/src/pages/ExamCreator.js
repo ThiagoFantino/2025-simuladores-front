@@ -607,18 +607,17 @@ const ExamCreator = () => {
             <div className="modern-card-header">
               <h3 className="modern-card-title">
                 <i className="fas fa-check-double me-2"></i>
-                Validar Tests (Herramientas del Profesor)
+                Validación de Test Cases y Solución de Referencia
               </h3>
             </div>
             <div className="modern-card-body">
               <div className="alert alert-info mb-3">
-                <i className="fas fa-lock me-2"></i>
-                <strong>Privado - Solo visible para el profesor</strong>
+                <i className="fas fa-info-circle me-2"></i>
+                <strong>Prueba tu solución antes de publicar</strong>
                 <ul className="mb-0 mt-2">
-                  <li>Escribe tu solución aquí para validar que tus tests funcionan correctamente</li>
-                  <li>Esta solución y los resultados NUNCA serán visibles para los estudiantes</li>
-                  <li>Puedes probar el código sin guardarlo, o guardarlo junto con el examen</li>
-                  <li>Soporta múltiples archivos para soluciones más complejas</li>
+                  <li><strong>Ejecuta tests</strong> para verificar que funcionan correctamente</li>
+                  <li><strong>Guarda tu solución</strong> como referencia o prueba sin guardar</li>
+                  <li><strong>Múltiples archivos:</strong> Organiza tu código en varios archivos si lo necesitas</li>
                 </ul>
               </div>
 
@@ -794,19 +793,37 @@ const ExamCreator = () => {
                     
                     {/* Toggle para guardar solución de referencia */}
                     <div className="mt-3 p-3" style={{
-                      backgroundColor: '#f8f9fa',
+                      backgroundColor: saveReferenceSolution ? '#d3f9d8' : '#ffe0e0',
                       borderRadius: '8px',
-                      border: '1px solid #dee2e6'
+                      border: `2px solid ${saveReferenceSolution ? '#2f9e44' : '#c92a2a'}`,
+                      transition: 'all 0.3s ease'
                     }}>
                       <div className="d-flex align-items-center justify-content-between">
                         <div style={{ flex: 1 }}>
                           <div className="d-flex align-items-center gap-2 mb-1">
-                            <i className="fas fa-save" style={{ color: '#6c757d' }}></i>
-                            <strong style={{ fontSize: '0.95rem' }}>Guardar esta solución con el examen</strong>
+                            <i className={`fas ${saveReferenceSolution ? 'fa-check-circle' : 'fa-times-circle'}`} style={{ 
+                              color: saveReferenceSolution ? '#2f9e44' : '#c92a2a',
+                              transition: 'all 0.3s ease'
+                            }}></i>
+                            <strong style={{ 
+                              fontSize: '0.95rem',
+                              color: saveReferenceSolution ? '#2f9e44' : '#c92a2a',
+                              transition: 'color 0.3s ease'
+                            }}>
+                              {saveReferenceSolution 
+                                ? 'Guardar esta solución de referencia' 
+                                : 'No guardar esta solución'}
+                            </strong>
                           </div>
-                          <small className="text-muted" style={{ display: 'block', marginLeft: '26px' }}>
-                            La solución guardada solo será visible para ti y te servirá como referencia.
-                            Puedes probar el código sin necesidad de guardarlo.
+                          <small style={{ 
+                            display: 'block', 
+                            marginLeft: '26px',
+                            color: saveReferenceSolution ? '#2b8a3e' : '#a61e4d',
+                            transition: 'color 0.3s ease'
+                          }}>
+                            {saveReferenceSolution 
+                              ? 'Esta solución se guardará como referencia al crear el examen.'
+                              : 'La solución no se guardará. Puedes probar el código sin necesidad de guardarlo.'}
                           </small>
                         </div>
                         
@@ -825,7 +842,9 @@ const ExamCreator = () => {
                             style={{
                               width: '3rem',
                               height: '1.5rem',
-                              cursor: 'pointer'
+                              cursor: 'pointer',
+                              backgroundColor: saveReferenceSolution ? '#2f9e44' : '#c92a2a',
+                              borderColor: saveReferenceSolution ? '#2f9e44' : '#c92a2a'
                             }}
                           />
                         </div>
