@@ -3238,8 +3238,10 @@ const ProgrammingExamView = () => {
       <Modal
         show={showDeleteModal}
         onClose={() => {
-          setShowDeleteModal(false);
-          setFileToDelete('');
+          if (!fileOperationLoading) {
+            setShowDeleteModal(false);
+            setFileToDelete('');
+          }
         }}
         onConfirm={deleteFile}
         title="Eliminar Archivo"
@@ -3248,6 +3250,7 @@ const ProgrammingExamView = () => {
         confirmText="Eliminar"
         cancelText="Cancelar"
         showCancel={true}
+        isProcessing={fileOperationLoading}
       />
     </div>
   );

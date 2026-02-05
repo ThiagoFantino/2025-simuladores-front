@@ -245,8 +245,8 @@ const openExam = async (examId, windowId, token, window) => {
   const handleInscription = (window) => {
     // Generar mensaje apropiado según si es ventana eterna o no
     const mensaje = window.sinTiempo 
-      ? `¿Deseas inscribirte al examen "${window.exam.titulo}"? Esta ventana está disponible permanentemente.`
-      : `¿Deseas inscribirte al examen "${window.exam.titulo}" programado para el ${new Date(window.fechaInicio).toLocaleString()}?`;
+      ? `¿Deseas inscribirte al examen "${window.nombre}"? Esta ventana está disponible permanentemente.`
+      : `¿Deseas inscribirte al examen "${window.nombre}" programado para el ${new Date(window.fechaInicio).toLocaleString()}?`;
 
     showModal(
       'confirm',
