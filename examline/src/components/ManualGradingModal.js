@@ -15,7 +15,6 @@ export default function ManualGradingModal({ attemptId, onClose, onSave }) {
   const [editedCode, setEditedCode] = useState('');
   const [executionResult, setExecutionResult] = useState(null);
   const [calificacionManual, setCalificacionManual] = useState('');
-  const [comentarios, setComentarios] = useState('');
   const [saving, setSaving] = useState(false);
   const [customInput, setCustomInput] = useState('');
   const [useCustomInput, setUseCustomInput] = useState(false);
@@ -67,9 +66,6 @@ export default function ManualGradingModal({ attemptId, onClose, onSave }) {
         // Pre-llenar calificación manual si ya existe
         if (data.calificacionManual !== null) {
           setCalificacionManual(data.calificacionManual.toString());
-        }
-        if (data.comentariosCorreccion) {
-          setComentarios(data.comentariosCorreccion);
         }
       }
     } catch (error) {
@@ -188,8 +184,7 @@ export default function ManualGradingModal({ attemptId, onClose, onSave }) {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          calificacionManual: grade,
-          comentariosCorreccion: comentarios
+          calificacionManual: grade
         })
       });
 
@@ -257,57 +252,97 @@ export default function ManualGradingModal({ attemptId, onClose, onSave }) {
         </div>
 
         <div className="modern-card-body" style={{ maxHeight: 'calc(90vh - 180px)', overflowY: 'auto' }}>
-          {/* Información del estudiante */}
-          <div className="alert alert-info mb-4">
-            <div className="d-flex justify-content-between align-items-center">
-              <div>
-                <strong><i className="fas fa-user me-2"></i>{attempt.user.nombre}</strong>
-                <div className="text-muted small">{attempt.user.email}</div>
+          {/* Información de calificaciones */}
+          <div className="row mb-4">
+            {attempt.puntaje !== null && (
+              <div className="col-md-6 mb-3">
+                <div className="modern-card" style={{ 
+                  height: '100%',
+                  border: '2px solid #0d6efd',
+                  background: 'linear-gradient(135deg, rgba(13, 110, 253, 0.05) 0%, rgba(13, 110, 253, 0.02) 100%)'
+                }}>
+                  <div className="modern-card-body text-center">
+                    <div style={{ 
+                      fontSize: '1.8rem', 
+                      color: '#0d6efd',
+                      marginBottom: '8px'
+                    }}>
+                      <i className="fas fa-robot"></i>
+                    </div>
+                    <h6 className="text-muted mb-2" style={{ fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                      Puntaje Automático
+                    </h6>
+                    <h2 className="mb-2" style={{ 
+                      color: '#0d6efd',
+                      fontWeight: 'bold',
+                      fontSize: '2.5rem'
+                    }}>
+                      {attempt.puntaje.toFixed(1)}%
+                    </h2>
+                    {attempt.exam.tipo === 'programming' && (
+                      <div style={{
+                        marginTop: '12px',
+                        padding: '8px 12px',
+                        backgroundColor: '#e7f3ff',
+                        border: '1px solid #0d6efd',
+                        borderRadius: '6px',
+                        fontSize: '0.75rem',
+                        color: '#084298',
+                        textAlign: 'left'
+                      }}>
+                        <i className="fas fa-info-circle me-1"></i>
+                        Calculado sobre <strong>{attempt.exam.lenguajeProgramacion === 'python' ? 'main.py' : 'main.js'}</strong> (versión manual guardada)
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
-              <div className="text-end">
-                <div className="small text-muted">Finalizado:</div>
-                <div>{new Date(attempt.finishedAt).toLocaleString()}</div>
+            )}
+            
+            <div className={attempt.puntaje !== null ? "col-md-6 mb-3" : "col-12 mb-3"}>
+              <div className="modern-card" style={{ 
+                height: '100%',
+                border: attempt.calificacionManual !== null ? '2px solid #198754' : '2px solid #ffc107',
+                background: attempt.calificacionManual !== null 
+                  ? 'linear-gradient(135deg, rgba(25, 135, 84, 0.05) 0%, rgba(25, 135, 84, 0.02) 100%)'
+                  : 'linear-gradient(135deg, rgba(255, 193, 7, 0.05) 0%, rgba(255, 193, 7, 0.02) 100%)'
+              }}>
+                <div className="modern-card-body text-center">
+                  <div style={{ 
+                    fontSize: '1.8rem', 
+                    color: attempt.calificacionManual !== null ? '#198754' : '#ffc107',
+                    marginBottom: '8px'
+                  }}>
+                    <i className={attempt.calificacionManual !== null ? "fas fa-check-circle" : "fas fa-exclamation-triangle"}></i>
+                  </div>
+                  <h6 className="text-muted mb-2" style={{ fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Calificación Manual
+                  </h6>
+                  {attempt.calificacionManual !== null ? (
+                    <h2 className="mb-0" style={{ 
+                      color: '#198754',
+                      fontWeight: 'bold',
+                      fontSize: '2.5rem'
+                    }}>
+                      {attempt.calificacionManual}
+                    </h2>
+                  ) : (
+                    <h4 className="mb-0" style={{ 
+                      color: '#ffc107',
+                      fontWeight: '600',
+                      fontSize: '1.2rem'
+                    }}>
+                      Pendiente de corrección
+                    </h4>
+                  )}
+                </div>
               </div>
             </div>
-            {attempt.puntaje !== null && (
-              <div className="mt-2">
-                <span className="badge bg-primary">Puntaje Automático: {attempt.puntaje.toFixed(1)}%</span>
-              </div>
-            )}
-            {attempt.calificacionManual !== null && (
-              <div className="mt-2">
-                <span className="badge bg-success">Calificación Manual: {attempt.calificacionManual}</span>
-                <span className="text-muted small ms-2">
-                  (Corregido el {new Date(attempt.corregidoAt).toLocaleString()})
-                </span>
-              </div>
-            )}
           </div>
 
           {/* Para exámenes de programación */}
           {attempt.exam.tipo === 'programming' && (
             <>
-              {/* Aviso sobre corrección automática */}
-              <div className="alert alert-warning mb-3" style={{
-                backgroundColor: '#fff3cd',
-                border: '1px solid #ffc107',
-                borderLeft: '4px solid #ffc107',
-                borderRadius: '4px',
-                padding: '12px 16px'
-              }}>
-                <div className="d-flex align-items-start gap-2">
-                  <i className="fas fa-robot" style={{ color: '#ff9800', fontSize: '1.2rem', marginTop: '2px' }}></i>
-                  <div style={{ flex: 1 }}>
-                    <strong style={{ color: '#f57c00', display: 'block', marginBottom: '4px' }}>
-                      🤖 Corrección Automática:
-                    </strong>
-                    <div style={{ color: '#e65100', fontSize: '0.9rem' }}>
-                      El puntaje automático se calculó sobre el archivo <strong>{attempt.exam.lenguajeProgramacion === 'python' ? 'main.py' : 'main.js'}</strong> guardado manualmente por el estudiante (versión "Guardados Manuales").
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
               {/* Enunciado */}
               <div className="modern-card mb-3">
                 <div className="modern-card-header">
@@ -343,17 +378,6 @@ export default function ManualGradingModal({ attemptId, onClose, onSave }) {
                   <div className="btn-group w-100" role="group">
                     <button
                       type="button"
-                      className={`btn ${fileVersion === 'submission' ? 'btn-primary' : 'btn-outline-secondary'}`}
-                      onClick={() => handleVersionChange('submission')}
-                    >
-                      <i className="fas fa-paper-plane me-2"></i>
-                      Entrega Final
-                      {attempt.submissionFiles.length > 0 && (
-                        <span className="badge bg-light text-dark ms-2">{attempt.submissionFiles.length}</span>
-                      )}
-                    </button>
-                    <button
-                      type="button"
                       className={`btn ${fileVersion === 'manual' ? 'btn-primary' : 'btn-outline-secondary'}`}
                       onClick={() => handleVersionChange('manual')}
                     >
@@ -361,6 +385,17 @@ export default function ManualGradingModal({ attemptId, onClose, onSave }) {
                       Guardados Manuales
                       {attempt.manualFiles.length > 0 && (
                         <span className="badge bg-light text-dark ms-2">{attempt.manualFiles.length}</span>
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      className={`btn ${fileVersion === 'submission' ? 'btn-primary' : 'btn-outline-secondary'}`}
+                      onClick={() => handleVersionChange('submission')}
+                    >
+                      <i className="fas fa-paper-plane me-2"></i>
+                      Entrega Final
+                      {attempt.submissionFiles.length > 0 && (
+                        <span className="badge bg-light text-dark ms-2">{attempt.submissionFiles.length}</span>
                       )}
                     </button>
                   </div>
@@ -606,18 +641,6 @@ export default function ManualGradingModal({ attemptId, onClose, onSave }) {
                   value={calificacionManual}
                   onChange={(e) => setCalificacionManual(e.target.value)}
                   placeholder="Ingrese la calificación..."
-                />
-              </div>
-              <div className="mb-3">
-                <label className="form-label fw-bold">
-                  Comentarios de Corrección (opcional):
-                </label>
-                <textarea
-                  className="form-control"
-                  rows="4"
-                  value={comentarios}
-                  onChange={(e) => setComentarios(e.target.value)}
-                  placeholder="Ingrese comentarios sobre la corrección..."
                 />
               </div>
             </div>
