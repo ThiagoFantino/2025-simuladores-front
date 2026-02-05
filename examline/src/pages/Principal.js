@@ -90,7 +90,7 @@ const Principal = () => {
                     Gestionar Exámenes
                   </h5>
                   <p className="action-description text-muted mb-3">
-                    Ve todos tus exámenes, crea nuevos o edita los existentes
+                    Mirá todos tus exámenes o creá nuevos
                   </p>
                   <button 
                     className="modern-btn modern-btn-primary w-100" 

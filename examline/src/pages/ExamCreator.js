@@ -350,7 +350,7 @@ const ExamCreator = () => {
       localStorage.removeItem(DRAFT_KEY);
       
       // Volver a la Página Principal
-      navigate("/principal");
+      navigate("/mis-examenes");
     } catch (err) {
       console.error(err);
       setError(err.message);
@@ -1200,10 +1200,6 @@ const ExamCreator = () => {
                       <h5 className="exam-title">
                         <span className="question-number">Pregunta {idx + 1}</span>
                       </h5>
-                      <span className="exam-badge">
-                        <i className="fas fa-check-circle"></i>
-                        <span className="badge-text">Lista</span>
-                      </span>
                     </div>
                     <div className="exam-card-body">
                       <div className="question-text mb-3">

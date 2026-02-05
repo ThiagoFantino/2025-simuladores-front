@@ -166,20 +166,31 @@ const MisExamenes = () => {
                   <div className={`exam-card fade-in-up`} style={{animationDelay: `${index * 0.1}s`}}>
                     <div className="exam-card-header">
                       <h5 className="exam-title">{exam.titulo}</h5>
-                      <span className="exam-badge">
-                        <i className="fas fa-check-circle"></i>
-                        <span className="badge-text">Activo</span>
-                      </span>
+                      <span
+  className={`exam-badge ${
+    exam.tipo === "programming"
+      ? "badge-programming"
+      : "badge-multiple"
+  }`}
+>
+  <i
+    className={`fas ${
+      exam.tipo === "programming" ? "fa-code" : "fa-list-ul"
+    } me-1`}
+  ></i>
+  <span className="badge-text">
+    {exam.tipo === "programming"
+      ? "Programación"
+      : "Múltiple Choice"}
+  </span>
+</span>
+
                     </div>
                     <div className="exam-card-body">
                       <div className="exam-info">
                         <div className="exam-info-item">
                           <i className="fas fa-hashtag"></i>
                           <span>Código: {exam.id}</span>
-                        </div>
-                        <div className="exam-info-item">
-                          <i className="fas fa-tag"></i>
-                          <span>Tipo: {exam.tipo === 'programming' ? 'Programación' : 'Múltiple Choice'}</span>
                         </div>
                         {exam.tipo === 'programming' ? (
                           <div className="exam-info-item">
