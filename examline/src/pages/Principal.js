@@ -113,7 +113,7 @@ const Principal = () => {
                     Gestionar y Corregir
                   </h5>
                   <p className="action-description text-muted mb-3">
-                    Creá ventanas de examen y corregí los exámenes en cada ventana
+                    Creá ventanas de examen para inscribirse y corregí los exámenes
                   </p>
                   <button 
                     className="modern-btn modern-btn-secondary w-100" 
