@@ -1,9 +1,11 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProfessorRoute, StudentRoute, AuthenticatedRoute } from "./components/ProtectedRoute";
+import ScrollToTop from "./components/ScrollToTop";
 import Login from "./pages/Login";
 import Registro from "./pages/Registro";
 import Principal from "./pages/Principal";
+import MisExamenes from "./pages/MisExamenes";
 import ExamCreator from "./pages/ExamCreator";
 import ExamView from "./pages/ExamView";
 import UserSettingsPage from "./pages/userSettings";
@@ -24,12 +26,18 @@ function App() {
   return (
     <AuthProvider>
       <Router>
+        <ScrollToTop />
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/registro" element={<Registro />} />
           <Route path="/principal" element={
             <ProfessorRoute>
               <Principal />
+            </ProfessorRoute>
+          } />
+          <Route path="/mis-examenes" element={
+            <ProfessorRoute>
+              <MisExamenes />
             </ProfessorRoute>
           } />
           <Route path="/exam-creator" element={

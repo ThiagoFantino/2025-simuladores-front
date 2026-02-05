@@ -245,8 +245,8 @@ const openExam = async (examId, windowId, token, window) => {
   const handleInscription = (window) => {
     // Generar mensaje apropiado según si es ventana eterna o no
     const mensaje = window.sinTiempo 
-      ? `¿Deseas inscribirte al examen "${window.exam.titulo}"? Esta ventana está disponible permanentemente.`
-      : `¿Deseas inscribirte al examen "${window.exam.titulo}" programado para el ${new Date(window.fechaInicio).toLocaleString()}?`;
+      ? `¿Deseas inscribirte al examen "${window.nombre}"? Esta ventana está disponible permanentemente.`
+      : `¿Deseas inscribirte al examen "${window.nombre}" programado para el ${new Date(window.fechaInicio).toLocaleString()}?`;
 
     showModal(
       'confirm',
@@ -327,13 +327,9 @@ const openExam = async (examId, windowId, token, window) => {
     const window = inscription.examWindow;
     const now = new Date();
     
-    // Verificar si la ventana requiere presentismo
-    const requierePresente = window.requierePresente === true;
-    
-    // Si es una ventana infinita (sin tiempo), solo verificar presentismo y que esté activa/programada
+    // Si es una ventana infinita (sin tiempo), solo verificar que esté activa/programada
     if (window.sinTiempo) {
-      return (window.estado === 'programada' || window.estado === 'en_curso') &&
-             (!requierePresente || inscription.presente === true);
+      return (window.estado === 'programada' || window.estado === 'en_curso');
     }
     
     // Para ventanas con tiempo, lógica original
@@ -341,8 +337,7 @@ const openExam = async (examId, windowId, token, window) => {
     const windowEnd = new Date(windowStart.getTime() + (window.duracion * 60 * 1000));
     
     return now >= windowStart && now <= windowEnd && 
-           window.estado === 'en_curso' && 
-           (!requierePresente || inscription.presente === true);
+           window.estado === 'en_curso';
   };
 
   const getTimeStatus = (fechaInicio, duracion, sinTiempo) => {
@@ -436,14 +431,14 @@ const openExam = async (examId, windowId, token, window) => {
             <div className="modern-card-body">
               <div className="row g-3">
                 <div className="col-lg-3 col-md-6">
-                  <label className="form-label fw-semibold">Título</label>
+                  <label className="form-label fw-semibold">Nombre</label>
                   <input 
                     type="text" 
                     className="form-control modern-input"
                     name="materia"
                     value={filters.materia}
                     onChange={handleFilterChange}
-                    placeholder="Buscar por título del examen"
+                    placeholder="Buscar por nombre de ventana"
                   />
                 </div>
                 <div className="col-lg-3 col-md-6">
@@ -536,9 +531,20 @@ const openExam = async (examId, windowId, token, window) => {
                   <div key={window.id} className="col-md-6 col-lg-4">
                     <div className={`exam-card fade-in-up`} style={{animationDelay: `${index * 0.1}s`}}>
                       <div className="exam-card-header">
-                        <h5 className="exam-title">{window.exam.titulo}</h5>
+                        <h5 className="exam-title">
+                          <i className="fas fa-tag me-2" style={{ fontSize: '0.9rem' }}></i>
+                          {window.nombre}
+                        </h5>
+                        <div style={{ 
+                          fontSize: '0.85rem', 
+                          color: '#6c757d', 
+                          marginTop: '0.35rem',
+                          fontWeight: '500'
+                        }}>
+                          <i className="fas fa-file-alt me-1" style={{ fontSize: '0.75rem' }}></i>
+                          {window.exam.titulo}
+                        </div>
                         <span className="exam-badge">
-                          <i className="fas fa-user-tie"></i>
                           Prof. {window.exam.profesor.nombre}
                         </span>
                       </div>
@@ -683,36 +689,23 @@ const openExam = async (examId, windowId, token, window) => {
                       <div className="exam-card-header">
                         <div className="d-flex justify-content-between align-items-start">
                           <div>
-                            <h5 className="exam-title">{window.exam.titulo}</h5>
+                            <h5 className="exam-title">
+                              <i className="fas fa-tag me-2" style={{ fontSize: '0.9rem' }}></i>
+                              {window.nombre}
+                            </h5>
+                            <div style={{ 
+                              fontSize: '0.85rem', 
+                              color: '#6c757d', 
+                              marginTop: '0.35rem',
+                              fontWeight: '500'
+                            }}>
+                              <i className="fas fa-file-alt me-1" style={{ fontSize: '0.75rem' }}></i>
+                              {window.exam.titulo}
+                            </div>
                             <span className="exam-badge">
-                              <i className="fas fa-user-tie"></i>
                               Prof. {window.exam.profesor.nombre}
                             </span>
                           </div>
-                          {(() => {
-                            const requierePresente = window.requierePresente === true;
-                            const estaHabilitado = !requierePresente || inscription.presente === true;
-                            
-                            if (estaHabilitado) {
-                              return (
-                                <span className="badge" style={{
-                                  backgroundColor: requierePresente ? '#10b981' : '#3b82f6',
-                                  color: 'white',
-                                  fontSize: '0.75rem',
-                                  fontWeight: '600',
-                                  padding: '0.375rem 0.75rem',
-                                  borderRadius: '0.5rem',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '0.25rem'
-                                }}>
-                                  <i className={`fas ${requierePresente ? 'fa-check-circle' : 'fa-unlock'}`}></i>
-                                  {requierePresente ? 'Habilitado' : 'Acceso libre'}
-                                </span>
-                              );
-                            }
-                            return null;
-                          })()}
                         </div>
                       </div>
                       <div className="exam-card-body">
@@ -809,10 +802,10 @@ const openExam = async (examId, windowId, token, window) => {
                               </button>
                             </div>
                           ) : window.sinTiempo ? (
-                            // Para ventanas sin tiempo, mostrar el estado de habilitación
+                            // Para ventanas sin tiempo, mostrar mensaje genérico
                             <button className="modern-btn modern-btn-warning w-100" disabled>
-                              <i className="fas fa-user-times me-2"></i>
-                              {window.requierePresente ? 'Esperando habilitación del profesor' : 'No disponible'}
+                              <i className="fas fa-clock me-2"></i>
+                              No disponible aún
                             </button>
                           ) : timeStatus.text === 'Finalizado' ? (
                             <button className="modern-btn modern-btn-secondary w-100" disabled>

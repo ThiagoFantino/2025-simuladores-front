@@ -19,6 +19,7 @@ export default function ExamWindowsPage() {
   const [editingWindow, setEditingWindow] = useState(null);
   const [formData, setFormData] = useState({
     examId: '',
+    nombre: '',
     fechaInicio: '',
     duracion: 120,
     modalidad: 'remoto',
@@ -26,8 +27,7 @@ export default function ExamWindowsPage() {
     notas: '',
     usaSEB: false,
     kioskMode: 0,
-    sinTiempo: false,
-    requierePresente: false
+    sinTiempo: false
   });
   const [validationErrors, setValidationErrors] = useState({});
   const [isSavingWindow, setIsSavingWindow] = useState(false);
@@ -126,175 +126,7 @@ export default function ExamWindowsPage() {
     loadData(false);
   }, [user, navigate, loadData]);
 
-  useEffect(() => {
-    if (!user || user.rol !== 'professor' || !token) {
-      return;
-    }
-
-    let socket = null;
-    let fallbackInterval = null;
-
-    const initWebSocket = async () => {
-      try {
-        const { io } = await import('socket.io-client');
-        
-        socket = io(API_BASE_URL, {
-          auth: {
-            token: token
-          },
-          transports: ['websocket'],
-          upgrade: true,
-          rememberUpgrade: true
-        });
-
-        let latencyStats = { min: Infinity, max: 0, avg: 0, measurements: [] };
-
-        socket.on('connect', () => {
-          setIsAutoUpdating(false);
-          socket.emit('join_professor_room');
-        });
-
-        socket.on('disconnect', () => {
-          // Manejar desconexión si es necesario
-        });
-
-        const triggerSilentRefresh = () => {
-          if (triggerSilentRefresh.lock) return;
-          triggerSilentRefresh.lock = true;
-          Promise.resolve(loadData(true)).finally(() => {
-            triggerSilentRefresh.lock = false;
-          });
-        };
-
-        socket.on('su', (data) => {
-          const receiveTime = Date.now();
-          const latency = receiveTime - data.ts;
-          
-          if (latency < latencyStats.min) latencyStats.min = latency;
-          if (latency > latencyStats.max) latencyStats.max = latency;
-          latencyStats.measurements.push(latency);
-          if (latencyStats.measurements.length > 10) {
-            latencyStats.measurements.shift();
-          }
-          latencyStats.avg = latencyStats.measurements.reduce((a, b) => a + b, 0) / latencyStats.measurements.length;
-          
-          if (data.t === 'sc' && data.c.length > 0) {
-            requestAnimationFrame(() => {
-              setExamWindows(prevWindows => {
-                const updatedWindows = prevWindows.map(window => {
-                  const change = data.c.find(c => c.i === window.id);
-                  if (change) {
-                    return { ...window, estado: change.s };
-                  }
-                  return window;
-                });
-                return updatedWindows;
-              });
-            });
-
-            setLastUpdate(new Date());
-            triggerSilentRefresh();
-          }
-        });
-
-        socket.on('statusUpdate', (data) => {
-          // Recibir actualización de estado en tiempo real
-          
-          if (data.type === 'status_change' && data.changes.length > 0) {
-            requestAnimationFrame(() => {
-              setExamWindows(prevWindows => {
-                const updatedWindows = prevWindows.map(window => {
-                  const change = data.c.find(c => c.i === window.id);
-                  if (change) {
-                    return { ...window, estado: change.s };
-                  }
-                  return window;
-                });
-                return updatedWindows;
-              });
-            });
-
-            setLastUpdate(new Date());
-            triggerSilentRefresh();
-          }
-        });
-
-        const applyEnrollmentUpdate = (payload) => {
-          const windowId = payload.windowId || payload.window_id || payload.id || payload.i;
-          if (!windowId) return;
-          requestAnimationFrame(() => {
-            setExamWindows(prev => prev.map(w => {
-              if (w.id !== windowId) return w;
-              const updated = { ...w };
-              if (Array.isArray(payload.inscripciones)) {
-                updated.inscripciones = payload.inscripciones;
-              } else {
-                const count = payload.count ?? payload.inscritos ?? payload.inscritosCount ?? payload.enrolled;
-                if (typeof count === 'number') updated.inscritosCount = count;
-              }
-              if (payload.estado) updated.estado = payload.estado;
-              return updated;
-            }));
-          });
-          setLastUpdate(new Date());
-        };
-
-        socket.on('inscriptions_changed', applyEnrollmentUpdate);
-        socket.on('inscription_update', applyEnrollmentUpdate);
-        socket.on('inscriptions_update', applyEnrollmentUpdate);
-        socket.on('enrollment_update', applyEnrollmentUpdate);
-        socket.on('iu', applyEnrollmentUpdate);
-        socket.on('inscription_cancelled', applyEnrollmentUpdate);
-        socket.on('enrollment_cancelled', applyEnrollmentUpdate);
-        socket.on('ic', applyEnrollmentUpdate);
-
-        socket.on('window_toggle', (data) => {
-          setExamWindows(prev => prev.map(window => 
-            window.id === data.i
-              ? { ...window, activa: data.a }
-              : window
-          ));
-          setLastUpdate(new Date());
-        });
-
-        socket.on('latency_ping', (serverTime) => {
-          socket.emit('ping', serverTime);
-        });
-
-        socket.on('pong', (data) => {
-          // RTT medido exitosamente
-        });
-
-        socket.on('connect_error', (error) => {
-          console.error('Error WebSocket:', error);
-          startFallback();
-        });
-
-      } catch (error) {
-        console.warn('Socket.io-client no disponible, usando fallback');
-        startFallback();
-      }
-    };
-
-    const startFallback = () => {
-      setIsAutoUpdating(true);
-      fallbackInterval = setInterval(() => {
-        loadData(true);
-      }, 120000);
-    };
-
-    initWebSocket();
-
-    return () => {
-      if (socket) {
-        socket.disconnect();
-      }
-      if (fallbackInterval) {
-        clearInterval(fallbackInterval);
-      }
-    };
-  }, [user, token, loadData, showModal]);
-
+  // Auto-refresh periódico (reemplaza WebSocket eliminado)
   useEffect(() => {
     if (!user || user.rol !== 'professor' || !token) {
       return;
@@ -302,7 +134,7 @@ export default function ExamWindowsPage() {
 
     const interval = setInterval(() => {
       loadData(true);
-    }, 30000);
+    }, 30000); // Actualizar cada 30 segundos
 
     return () => clearInterval(interval);
   }, [user, token, loadData]);
@@ -329,6 +161,7 @@ export default function ExamWindowsPage() {
   const resetForm = () => {
     setFormData({
       examId: '',
+      nombre: '',
       fechaInicio: '',
       duracion: 120,
       modalidad: 'remoto',
@@ -336,8 +169,7 @@ export default function ExamWindowsPage() {
       notas: '',
       usaSEB: false,
       kioskMode: 0,
-      sinTiempo: false,
-      requierePresente: false
+      sinTiempo: false
     });
     setEditingWindow(null);
     setValidationErrors({});
@@ -376,6 +208,7 @@ export default function ExamWindowsPage() {
     const isInfinite = window.sinTiempo || false;
     setFormData({
       examId: window.examId,
+      nombre: window.nombre || '',
       fechaInicio: window.fechaInicio ? formatDateTimeLocal(window.fechaInicio) : '',
       duracion: window.duracion || 120,
       modalidad: window.modalidad,
@@ -383,8 +216,7 @@ export default function ExamWindowsPage() {
       notas: window.notas || '',
       usaSEB: window.usaSEB || false,
       kioskMode: window.kioskMode || 0,
-      sinTiempo: isInfinite,
-      requierePresente: isInfinite ? false : (window.requierePresente || false)
+      sinTiempo: isInfinite
     });
     setEditingWindow(window);
     setShowCreateModal(true);
@@ -393,6 +225,11 @@ export default function ExamWindowsPage() {
   const validateForm = () => {
     const errors = [];
     const fieldErrors = {};
+    
+    if (!formData.nombre || formData.nombre.trim() === '') {
+      errors.push('Debe ingresar un nombre para la ventana');
+      fieldErrors.nombre = true;
+    }
     
     if (!formData.examId) {
       errors.push('Debe seleccionar un examen');
@@ -640,10 +477,22 @@ export default function ExamWindowsPage() {
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
-                <h5 className="exam-title" style={{ margin: 0, flex: 1 }}>
-                  {window.exam.titulo}
-                  {window.estado === 'en_curso' && <span className="status-pulse" />}
-                </h5>
+                <div style={{ flex: 1 }}>
+                  <h5 className="exam-title" style={{ margin: 0 }}>
+                    <i className="fas fa-tag me-2" style={{ fontSize: '0.9rem', color: 'var(--primary-color)' }}></i>
+                    {window.nombre}
+                    {window.estado === 'en_curso' && <span className="status-pulse" />}
+                  </h5>
+                  <div style={{ 
+                    fontSize: '0.85rem', 
+                    color: '#6c757d', 
+                    marginTop: '0.35rem',
+                    fontWeight: '500'
+                  }}>
+                    <i className="fas fa-file-alt me-1" style={{ fontSize: '0.75rem' }}></i>
+                    {window.exam.titulo}
+                  </div>
+                </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
                   {getStatusBadge(window.estado)}
                   <div 
@@ -782,17 +631,6 @@ export default function ExamWindowsPage() {
                   >
                     <i className="fas fa-edit"></i>
                     Editar
-                  </button>
-                )}
-                {window.requierePresente && (
-                  <button 
-                    className="modern-btn modern-btn-secondary modern-btn-sm w-100"
-                    onClick={() => {
-                      navigate(`/exam-windows/${window.id}/inscriptions`);
-                    }}
-                  >
-                    <i className="fas fa-user-check"></i>
-                    Presentismo
                   </button>
                 )}
                 <button 
@@ -1133,6 +971,44 @@ export default function ExamWindowsPage() {
                 <form onSubmit={handleSaveWindow} onClick={(e) => e.stopPropagation()}>
                   <div className="modern-card-body" style={{ padding: '1.5rem' }}>
                     
+                    {/* Nombre de la Ventana */}
+                    <div className="row mb-4">
+                      <div className="col-12">
+                        <label className="form-label" style={{ 
+                          fontWeight: '600', 
+                          color: 'var(--text-color-2)', 
+                          marginBottom: '0.4rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem',
+                          fontSize: '0.9rem'
+                        }}>
+                          <i className="fas fa-tag text-primary"></i>
+                          Nombre de la Ventana *
+                        </label>
+                        <input 
+                          type="text" 
+                          className="form-control modern-input"
+                          name="nombre"
+                          value={formData.nombre}
+                          onChange={handleInputChange}
+                          placeholder="Ej: Turno Mañana, Grupo A, Recuperatorio, 1er Parcial, etc."
+                          required
+                          style={{
+                            borderRadius: '8px',
+                            border: `1px solid ${validationErrors.nombre ? '#dc3545' : 'var(--border-color)'}`,
+                            padding: '0.6rem',
+                            fontSize: '0.9rem',
+                            boxShadow: validationErrors.nombre ? '0 0 0 0.2rem rgba(220, 53, 69, 0.25)' : 'none'
+                          }}
+                        />
+                        <small className="text-muted mt-1" style={{ fontSize: '0.8rem' }}>
+                          <i className="fas fa-info-circle me-1"></i>
+                          Nombre descriptivo para identificar esta ventana de examen
+                        </small>
+                      </div>
+                    </div>
+
                     {/* Selección de Examen */}
                     <div className="row mb-4">
                       <div className="col-12">
@@ -1168,59 +1044,6 @@ export default function ExamWindowsPage() {
                             <option key={exam.id} value={exam.id}>{exam.titulo}</option>
                           ))}
                         </select>
-                      </div>
-                    </div>
-
-                    {/* Toggle para sistema de presentismo */}
-                    <div className="mb-4">
-                      <div className="card" style={{ 
-                        backgroundColor: formData.sinTiempo ? '#f5f5f5' : formData.requierePresente ? '#fff5f5' : '#f8f9fa', 
-                        borderColor: formData.sinTiempo ? '#d3d3d3' : formData.requierePresente ? '#f56565' : '#e9ecef',
-                        borderWidth: '2px',
-                        transition: 'all 0.3s ease',
-                        opacity: formData.sinTiempo ? 0.7 : 1
-                      }}>
-                        <div className="card-body p-3">
-                          <div className="d-flex align-items-center justify-content-between">
-                            <div className="d-flex align-items-center">
-                              <div className="form-check form-switch me-3">
-                                <input 
-                                  className="form-check-input" 
-                                  type="checkbox" 
-                                  id="requierePresente"
-                                  name="requierePresente"
-                                  checked={formData.requierePresente}
-                                  onChange={(e) => setFormData(prev => ({ ...prev, requierePresente: e.target.checked }))}
-                                  disabled={formData.sinTiempo || (!!editingWindow && editingWindow.estado === 'finalizada')}
-                                  style={{ 
-                                    width: '3rem', 
-                                    height: '1.5rem',
-                                    backgroundColor: formData.requierePresente ? '#f56565' : '#6c757d',
-                                    borderColor: formData.requierePresente ? '#f56565' : '#6c757d',
-                                    opacity: formData.sinTiempo ? 0.5 : 1
-                                  }}
-                                />
-                              </div>
-                              <div>
-                                <label className="form-check-label mb-0" htmlFor="requierePresente" style={{ fontWeight: '600', fontSize: '1rem', cursor: formData.sinTiempo ? 'not-allowed' : 'pointer', opacity: formData.sinTiempo ? 0.7 : 1 }}>
-                                  <i className={`fas ${formData.requierePresente ? 'fa-user-check text-danger' : 'fa-user-slash text-secondary'} me-2`}></i>
-                                  {formData.requierePresente ? 'Sistema de presentismo activado' : 'Sistema de presentismo desactivado'}
-                                </label>
-                                <div style={{ fontSize: '0.85rem', color: '#6c757d', marginTop: '0.25rem' }}>
-                                  {formData.sinTiempo 
-                                    ? 'Las ventanas infinitas no requieren control de asistencia - Sistema automáticamente desactivado'
-                                    : formData.requierePresente 
-                                      ? 'Los estudiantes deben ser marcados como presentes para acceder al examen'
-                                      : 'Los estudiantes pueden acceder al examen libremente sin control de asistencia'
-                                  }
-                                </div>
-                              </div>
-                            </div>
-                            <div style={{ fontSize: '2rem', opacity: 0.3 }}>
-                              <i className={`fas ${formData.requierePresente ? 'fa-user-check' : 'fa-unlock'}`}></i>
-                            </div>
-                          </div>
-                        </div>
                       </div>
                     </div>
 
@@ -1353,16 +1176,14 @@ export default function ExamWindowsPage() {
                                     const isInfinite = e.target.checked;
                                     setFormData(prev => ({
                                       ...prev,
-                                      sinTiempo: isInfinite,
-                                      requierePresente: isInfinite ? false : prev.requierePresente
+                                      sinTiempo: isInfinite
                                     }));
                                     
                                     setValidationErrors(prev => ({
                                       ...prev,
                                       sinTiempo: false,
                                       fechaInicio: false,
-                                      duracion: false,
-                                      requierePresente: false
+                                      duracion: false
                                     }));
                                   }}
                                   disabled={!!editingWindow && (editingWindow.estado === 'en_curso' || editingWindow.estado === 'finalizada')}

@@ -107,7 +107,10 @@ const ExamView = ({ examId: propExamId, onBack }) => {
                   <span className="btn-text">Volver</span>
                 </button>
               ) : (
-                <BackToMainButton className="modern-btn modern-btn-secondary modern-btn-sm" />
+               <BackToMainButton 
+                customPath="/mis-examenes"
+                customLabel={<><i className="fas fa-arrow-left me-2"></i>Volver a Mis Exámenes</>}
+              />
               )}
             </div>
           </div>
@@ -374,7 +377,7 @@ const ExamView = ({ examId: propExamId, onBack }) => {
           <div className="modern-card-header">
             <h3 className="modern-card-title">
               <i className="fas fa-star me-2" style={{ color: '#ffd700' }}></i>
-              Solución de Referencia (Solo visible para ti)
+              Solución de Referencia
             </h3>
           </div>
           <div className="modern-card-body">

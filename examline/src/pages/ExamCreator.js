@@ -1,5 +1,5 @@
 // src/pages/ExamCreator.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import Editor from '@monaco-editor/react';
@@ -8,37 +8,53 @@ import BackToMainButton from "../components/BackToMainButton";
 import Modal from "../components/Modal";
 import { createExam, testSolutionPreview } from "../services/api";
 
+const DRAFT_KEY = 'examCreatorDraft';
+
 const ExamCreator = () => {
   const navigate = useNavigate();
   const { modal, showModal, closeModal } = useModal();
-  const [titulo, setTitulo] = useState("");
-  const [tipoExamen, setTipoExamen] = useState("multiple_choice"); // "multiple_choice" | "programming"
+  
+  // Cargar borrador desde localStorage
+  const loadDraft = () => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      return saved ? JSON.parse(saved) : null;
+    } catch (err) {
+      console.error('Error cargando borrador:', err);
+      return null;
+    }
+  };
+  
+  const draft = loadDraft();
+  
+  const [titulo, setTitulo] = useState(draft?.titulo || "");
+  const [tipoExamen, setTipoExamen] = useState(draft?.tipoExamen || "multiple_choice");
   
   // Estados para exámenes de multiple choice
-  const [preguntas, setPreguntas] = useState([]);
-  const [textoPregunta, setTextoPregunta] = useState("");
-  const [opciones, setOpciones] = useState(["", ""]);
-  const [correcta, setCorrecta] = useState(0);
+  const [preguntas, setPreguntas] = useState(draft?.preguntas || []);
+  const [textoPregunta, setTextoPregunta] = useState(draft?.textoPregunta || "");
+  const [opciones, setOpciones] = useState(draft?.opciones || ["", ""]);
+  const [correcta, setCorrecta] = useState(draft?.correcta || 0);
   
   // Estados para exámenes de programación
-  const [lenguajeProgramacion, setLenguajeProgramacion] = useState("python");
-  const [intellisenseHabilitado, setIntellisenseHabilitado] = useState(false);
-  const [enunciadoProgramacion, setEnunciadoProgramacion] = useState("");
-  const [codigoInicial, setCodigoInicial] = useState("");
-  const [testCases, setTestCases] = useState([
+  const [lenguajeProgramacion, setLenguajeProgramacion] = useState(draft?.lenguajeProgramacion || "python");
+  const [intellisenseHabilitado, setIntellisenseHabilitado] = useState(draft?.intellisenseHabilitado || false);
+  const [enunciadoProgramacion, setEnunciadoProgramacion] = useState(draft?.enunciadoProgramacion || "");
+  const [codigoInicial, setCodigoInicial] = useState(draft?.codigoInicial || "");
+  const [testCases, setTestCases] = useState(draft?.testCases || [
     { description: "", input: "", expectedOutput: "" }
   ]);
   
   // Estados para solución de referencia multi-archivo
-  const [referenceFiles, setReferenceFiles] = useState([
+  const [referenceFiles, setReferenceFiles] = useState(draft?.referenceFiles || [
     { filename: 'main.py', content: '' }
   ]);
-  const [currentReferenceFile, setCurrentReferenceFile] = useState('main.py');
+  const [currentReferenceFile, setCurrentReferenceFile] = useState(draft?.currentReferenceFile || 'main.py');
   const [showNewReferenceFileModal, setShowNewReferenceFileModal] = useState(false);
   const [newReferenceFileName, setNewReferenceFileName] = useState('');
   const [referenceFileToDelete, setReferenceFileToDelete] = useState('');
   const [showDeleteReferenceFileModal, setShowDeleteReferenceFileModal] = useState(false);
-  const [saveReferenceSolution, setSaveReferenceSolution] = useState(false);
+  const [saveReferenceSolution, setSaveReferenceSolution] = useState(draft?.saveReferenceSolution || false);
   
   const [testResults, setTestResults] = useState(null);
   const [isRunningTests, setIsRunningTests] = useState(false);
@@ -46,6 +62,70 @@ const ExamCreator = () => {
   
   const [error, setError] = useState("");
   const [isPublishing, setIsPublishing] = useState(false);
+  const [hasDraft, setHasDraft] = useState(!!draft);
+
+  // Autoguardado: guardar en localStorage cuando cambien los estados importantes
+  useEffect(() => {
+    const draftData = {
+      titulo,
+      tipoExamen,
+      preguntas,
+      textoPregunta,
+      opciones,
+      correcta,
+      lenguajeProgramacion,
+      intellisenseHabilitado,
+      enunciadoProgramacion,
+      codigoInicial,
+      testCases,
+      referenceFiles,
+      currentReferenceFile,
+      saveReferenceSolution,
+      savedAt: new Date().toISOString()
+    };
+    
+    // Solo guardar si hay contenido
+    const hasContent = titulo || preguntas.length > 0 || enunciadoProgramacion || 
+                      testCases.some(tc => tc.description || tc.input || tc.expectedOutput) ||
+                      referenceFiles.some(f => f.content);
+    
+    if (hasContent) {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(draftData));
+      setHasDraft(true);
+    }
+  }, [titulo, tipoExamen, preguntas, textoPregunta, opciones, correcta, 
+      lenguajeProgramacion, intellisenseHabilitado, enunciadoProgramacion, 
+      codigoInicial, testCases, referenceFiles, currentReferenceFile, saveReferenceSolution]);
+
+  // Función para descartar borrador
+  const handleDiscardDraft = () => {
+    showModal(
+      'confirm',
+      '🗑️ Descartar Borrador',
+      '¿Estás seguro de que deseas descartar el borrador actual? Esta acción no se puede deshacer.',
+      () => {
+        localStorage.removeItem(DRAFT_KEY);
+        // Resetear todos los estados
+        setTitulo("");
+        setTipoExamen("multiple_choice");
+        setPreguntas([]);
+        setTextoPregunta("");
+        setOpciones(["", ""]);
+        setCorrecta(0);
+        setLenguajeProgramacion("python");
+        setIntellisenseHabilitado(false);
+        setEnunciadoProgramacion("");
+        setCodigoInicial("");
+        setTestCases([{ description: "", input: "", expectedOutput: "" }]);
+        setReferenceFiles([{ filename: 'main.py', content: '' }]);
+        setCurrentReferenceFile('main.py');
+        setSaveReferenceSolution(false);
+        setHasDraft(false);
+        closeModal();
+      },
+      true
+    );
+  };
 
   // Efecto para actualizar extensión de archivos cuando cambia el lenguaje
   React.useEffect(() => {
@@ -266,8 +346,11 @@ const ExamCreator = () => {
 
       await createExam(examData);
       
+      // Limpiar borrador al publicar exitosamente
+      localStorage.removeItem(DRAFT_KEY);
+      
       // Volver a la Página Principal
-      navigate("/principal");
+      navigate("/mis-examenes");
     } catch (err) {
       console.error(err);
       setError(err.message);
@@ -324,11 +407,30 @@ const ExamCreator = () => {
               <h1 className="page-title mb-1">
                 <i className="fas fa-plus-circle me-2" style={{ color: 'var(--primary-color)' }}></i>
                 <span className="title-text">Crear Examen</span>
+                {hasDraft && (
+                  <span className="badge bg-info ms-2" style={{ fontSize: '0.6em', verticalAlign: 'middle' }}>
+                    <i className="fas fa-save me-1"></i>
+                    Borrador guardado
+                  </span>
+                )}
               </h1>
               <p className="page-subtitle mb-0">Diseña un nuevo examen con preguntas personalizadas</p>
             </div>
-            <div className="exam-creator-actions">
-              <BackToMainButton />
+            <div className="exam-creator-actions" style={{ display: 'flex', gap: '0.5rem' }}>
+              {hasDraft && (
+                <button
+                  className="modern-btn modern-btn-danger compact-btn"
+                  onClick={handleDiscardDraft}
+                  title="Descartar borrador"
+                >
+                  <i className="fas fa-trash me-2"></i>
+                  <span className="btn-text">Descartar</span>
+                </button>
+              )}
+              <BackToMainButton 
+                customPath="/mis-examenes"
+                customLabel={<><i className="fas fa-arrow-left me-2"></i>Volver a Mis Exámenes</>}
+              />
             </div>
           </div>
         </div>
@@ -607,18 +709,17 @@ const ExamCreator = () => {
             <div className="modern-card-header">
               <h3 className="modern-card-title">
                 <i className="fas fa-check-double me-2"></i>
-                Validar Tests (Herramientas del Profesor)
+                Validación de Test Cases y Solución de Referencia
               </h3>
             </div>
             <div className="modern-card-body">
               <div className="alert alert-info mb-3">
-                <i className="fas fa-lock me-2"></i>
-                <strong>Privado - Solo visible para el profesor</strong>
+                <i className="fas fa-info-circle me-2"></i>
+                <strong>Prueba tu solución antes de publicar</strong>
                 <ul className="mb-0 mt-2">
-                  <li>Escribe tu solución aquí para validar que tus tests funcionan correctamente</li>
-                  <li>Esta solución y los resultados NUNCA serán visibles para los estudiantes</li>
-                  <li>Puedes probar el código sin guardarlo, o guardarlo junto con el examen</li>
-                  <li>Soporta múltiples archivos para soluciones más complejas</li>
+                  <li><strong>Ejecuta tests</strong> para verificar que funcionan correctamente</li>
+                  <li><strong>Guarda tu solución</strong> como referencia o prueba sin guardar</li>
+                  <li><strong>Múltiples archivos:</strong> Organiza tu código en varios archivos si lo necesitas</li>
                 </ul>
               </div>
 
@@ -792,43 +893,109 @@ const ExamCreator = () => {
                       />
                     </div>
                     
-                    {/* Toggle para guardar solución de referencia */}
+                    {/* Opciones de radio para guardar solución de referencia */}
                     <div className="mt-3 p-3" style={{
                       backgroundColor: '#f8f9fa',
                       borderRadius: '8px',
-                      border: '1px solid #dee2e6'
+                      border: '2px solid #dee2e6'
                     }}>
-                      <div className="d-flex align-items-center justify-content-between">
-                        <div style={{ flex: 1 }}>
-                          <div className="d-flex align-items-center gap-2 mb-1">
-                            <i className="fas fa-save" style={{ color: '#6c757d' }}></i>
-                            <strong style={{ fontSize: '0.95rem' }}>Guardar esta solución con el examen</strong>
+                      <div className="mb-2">
+                        <strong style={{ fontSize: '0.95rem', color: '#495057' }}>
+                          <i className="fas fa-save me-2"></i>
+                          Solución de Referencia
+                        </strong>
+                      </div>
+                      
+                      {/* Opción 1: Guardar */}
+                      <div 
+                        className="form-check p-3 mb-2" 
+                        style={{
+                          backgroundColor: saveReferenceSolution ? '#d3f9d8' : 'white',
+                          borderRadius: '6px',
+                          border: `2px solid ${saveReferenceSolution ? '#2f9e44' : '#dee2e6'}`,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onClick={() => setSaveReferenceSolution(true)}
+                      >
+                        <input
+                          className="form-check-input"
+                          type="radio"
+                          name="saveReferenceSolution"
+                          id="saveReferenceYes"
+                          checked={saveReferenceSolution}
+                          onChange={() => setSaveReferenceSolution(true)}
+                          style={{ cursor: 'pointer' }}
+                        />
+                        <label 
+                          className="form-check-label ms-2" 
+                          htmlFor="saveReferenceYes"
+                          style={{ cursor: 'pointer', width: '100%' }}
+                        >
+                          <div className="d-flex align-items-start">
+                            <div>
+                              <strong style={{ 
+                                color: saveReferenceSolution ? '#2f9e44' : '#495057'
+                              }}>
+                                <i className="fas fa-check-circle me-2"></i>
+                                Guardar esta solución
+                              </strong>
+                              <div style={{ 
+                                fontSize: '0.875rem',
+                                color: saveReferenceSolution ? '#2b8a3e' : '#6c757d',
+                                marginTop: '0.25rem'
+                              }}>
+                                Se guardará como solución de referencia
+                              </div>
+                            </div>
                           </div>
-                          <small className="text-muted" style={{ display: 'block', marginLeft: '26px' }}>
-                            La solución guardada solo será visible para ti y te servirá como referencia.
-                            Puedes probar el código sin necesidad de guardarlo.
-                          </small>
-                        </div>
-                        
-                        {/* Toggle Switch */}
-                        <div className="form-check form-switch" style={{ 
-                          paddingLeft: 0,
-                          marginLeft: '1rem'
-                        }}>
-                          <input
-                            className="form-check-input"
-                            type="checkbox"
-                            role="switch"
-                            id="saveReferenceSolutionToggle"
-                            checked={saveReferenceSolution}
-                            onChange={(e) => setSaveReferenceSolution(e.target.checked)}
-                            style={{
-                              width: '3rem',
-                              height: '1.5rem',
-                              cursor: 'pointer'
-                            }}
-                          />
-                        </div>
+                        </label>
+                      </div>
+                      
+                      {/* Opción 2: No guardar */}
+                      <div 
+                        className="form-check p-3" 
+                        style={{
+                          backgroundColor: !saveReferenceSolution ? '#ffe0e0' : 'white',
+                          borderRadius: '6px',
+                          border: `2px solid ${!saveReferenceSolution ? '#c92a2a' : '#dee2e6'}`,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onClick={() => setSaveReferenceSolution(false)}
+                      >
+                        <input
+                          className="form-check-input"
+                          type="radio"
+                          name="saveReferenceSolution"
+                          id="saveReferenceNo"
+                          checked={!saveReferenceSolution}
+                          onChange={() => setSaveReferenceSolution(false)}
+                          style={{ cursor: 'pointer' }}
+                        />
+                        <label 
+                          className="form-check-label ms-2" 
+                          htmlFor="saveReferenceNo"
+                          style={{ cursor: 'pointer', width: '100%' }}
+                        >
+                          <div className="d-flex align-items-start">
+                            <div>
+                              <strong style={{ 
+                                color: !saveReferenceSolution ? '#c92a2a' : '#495057'
+                              }}>
+                                <i className="fas fa-times-circle me-2"></i>
+                                No guardar esta solución
+                              </strong>
+                              <div style={{ 
+                                fontSize: '0.875rem',
+                                color: !saveReferenceSolution ? '#a61e4d' : '#6c757d',
+                                marginTop: '0.25rem'
+                              }}>
+                                Solo para probar el código sin guardarlo como referencia
+                              </div>
+                            </div>
+                          </div>
+                        </label>
                       </div>
                     </div>
                   </div>
@@ -1079,10 +1246,6 @@ const ExamCreator = () => {
                       <h5 className="exam-title">
                         <span className="question-number">Pregunta {idx + 1}</span>
                       </h5>
-                      <span className="exam-badge">
-                        <i className="fas fa-check-circle"></i>
-                        <span className="badge-text">Lista</span>
-                      </span>
                     </div>
                     <div className="exam-card-body">
                       <div className="question-text mb-3">
