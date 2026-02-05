@@ -137,6 +137,34 @@ export default function ExamWindowResultsPage() {
     setModal(prev => ({ ...prev, show: false }));
   };
 
+  const handlePublicarNotas = async (publicar) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/exam-windows/${windowId}/publicar-notas`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ notasPublicadas: publicar })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setExamWindow({ ...examWindow, notasPublicadas: data.notasPublicadas });
+        showModal(
+          'success',
+          'Éxito',
+          publicar ? 'Las notas han sido publicadas y son visibles para los estudiantes' : 'Las notas han sido ocultadas y no son visibles para los estudiantes'
+        );
+      } else {
+        throw new Error('Error al actualizar publicación de notas');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      showModal('error', 'Error', 'No se pudo actualizar la publicación de las notas');
+    }
+  };
+
   if (loading) {
     return (
       <div className="container py-5">
@@ -456,21 +484,74 @@ export default function ExamWindowResultsPage() {
         </div>
       </div>
 
-      {/* Botón de sincronización con Moodle */}
-      <div className="modern-card">
-        <div className="modern-card-body text-center">
-          <button 
-            className="modern-btn modern-btn-primary modern-btn-lg" 
-            onClick={() => setShowMoodleModal(true)}
-            title="Sincronizar calificaciones con Moodle"
-          >
-            <i className="fas fa-graduation-cap me-2"></i>
-            Sincronizar Notas con Moodle
-          </button>
-          <p className="text-muted mt-3 mb-0">
-            <i className="fas fa-info-circle me-2"></i>
-            Exporta las calificaciones de los estudiantes a tu curso de Moodle
-          </p>
+      {/* Acciones de Gestión de Notas */}
+      <div className="row mb-4">
+        {/* Publicación de Notas */}
+        <div className="col-lg-6 mb-3 mb-lg-0">
+          <div className="modern-card h-100" style={{
+            border: examWindow?.notasPublicadas ? '2px solid #ffc107' : '2px solid #198754',
+            background: examWindow?.notasPublicadas 
+              ? 'linear-gradient(135deg, rgba(255, 193, 7, 0.05) 0%, rgba(255, 193, 7, 0.02) 100%)'
+              : 'linear-gradient(135deg, rgba(25, 135, 84, 0.05) 0%, rgba(25, 135, 84, 0.02) 100%)'
+          }}>
+            <div className="modern-card-body d-flex flex-column justify-content-between">
+              <div className="mb-3">
+                <h5 className="mb-2" style={{ 
+                  color: examWindow?.notasPublicadas ? '#f57c00' : '#198754',
+                  fontWeight: '600'
+                }}>
+                  <i className={`fas ${examWindow?.notasPublicadas ? 'fa-eye' : 'fa-eye-slash'} me-2`}></i>
+                  Publicación de Notas
+                </h5>
+                <p className="text-muted mb-0" style={{ fontSize: '0.9rem' }}>
+                  {examWindow?.notasPublicadas 
+                    ? '✓ Las notas están visibles para los estudiantes'
+                    : '✗ Las notas están ocultas para los estudiantes'
+                  }
+                </p>
+              </div>
+              <button 
+                className={`modern-btn ${
+                  examWindow?.notasPublicadas ? 'modern-btn-warning' : 'modern-btn-success'
+                } modern-btn-lg w-100`}
+                onClick={() => handlePublicarNotas(!examWindow?.notasPublicadas)}
+                title={examWindow?.notasPublicadas ? 'Ocultar notas' : 'Publicar notas'}
+                style={{ padding: '12px 24px' }}
+              >
+                <i className={`fas ${examWindow?.notasPublicadas ? 'fa-eye-slash' : 'fa-eye'} me-2`}></i>
+                {examWindow?.notasPublicadas ? 'Ocultar Notas' : 'Publicar Notas'}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Sincronización con Moodle */}
+        <div className="col-lg-6">
+          <div className="modern-card h-100" style={{
+            border: '2px solid #0d6efd',
+            background: 'linear-gradient(135deg, rgba(13, 110, 253, 0.05) 0%, rgba(13, 110, 253, 0.02) 100%)'
+          }}>
+            <div className="modern-card-body d-flex flex-column justify-content-between">
+              <div className="mb-3">
+                <h5 className="mb-2" style={{ color: '#0d6efd', fontWeight: '600' }}>
+                  <i className="fas fa-graduation-cap me-2"></i>
+                  Sincronización con Moodle
+                </h5>
+                <p className="text-muted mb-0" style={{ fontSize: '0.9rem' }}>
+                  Exporta las calificaciones de los estudiantes a tu curso de Moodle
+                </p>
+              </div>
+              <button 
+                className="modern-btn modern-btn-primary modern-btn-lg w-100" 
+                onClick={() => setShowMoodleModal(true)}
+                title="Sincronizar calificaciones con Moodle"
+                style={{ padding: '12px 24px' }}
+              >
+                <i className="fas fa-sync-alt me-2"></i>
+                Sincronizar con Moodle
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 

@@ -736,7 +736,9 @@ const openExam = async (examId, windowId, token, window) => {
                                 <i className="fas fa-check-circle me-2"></i>
                                 Examen Completado
                               </button>
-                              {inscription.attempt?.calificacionManual !== null && inscription.attempt?.calificacionManual !== undefined && (
+                              {inscription.examWindow?.notasPublicadas && 
+                               inscription.attempt?.calificacionManual !== null && 
+                               inscription.attempt?.calificacionManual !== undefined && (
                                 <div className="alert alert-info d-flex align-items-center justify-content-center" style={{
                                   fontSize: '1.1rem',
                                   fontWeight: 'bold',
