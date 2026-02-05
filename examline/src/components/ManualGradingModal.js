@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { getReferenceFiles } from '../services/api';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '../modern-examline.css';
 
@@ -18,6 +19,9 @@ export default function ManualGradingModal({ attemptId, onClose, onSave }) {
   const [saving, setSaving] = useState(false);
   const [customInput, setCustomInput] = useState('');
   const [useCustomInput, setUseCustomInput] = useState(false);
+  const [referenceFiles, setReferenceFiles] = useState([]);
+  const [currentReferenceFile, setCurrentReferenceFile] = useState('');
+  const [loadingReferenceFiles, setLoadingReferenceFiles] = useState(false);
 
   useEffect(() => {
     loadAttemptDetails();
@@ -32,6 +36,8 @@ export default function ManualGradingModal({ attemptId, onClose, onSave }) {
 
       if (response.ok) {
         const data = await response.json();
+        console.log('🔍 Datos del intento recibidos:', data);
+        console.log('🔍 Solución de referencia:', data.exam?.solucionReferencia);
         setAttempt(data);
         
         // 🔒 IMPORTANTE: Cargar por defecto el archivo main en versión manual
@@ -66,6 +72,22 @@ export default function ManualGradingModal({ attemptId, onClose, onSave }) {
         // Pre-llenar calificación manual si ya existe
         if (data.calificacionManual !== null) {
           setCalificacionManual(data.calificacionManual.toString());
+        }
+
+        // Cargar archivos de referencia si es examen de programación
+        if (data.exam.tipo === 'programming') {
+          try {
+            setLoadingReferenceFiles(true);
+            const refFiles = await getReferenceFiles(data.examId);
+            if (refFiles && refFiles.length > 0) {
+              setReferenceFiles(refFiles);
+              setCurrentReferenceFile(refFiles[0].filename);
+            }
+          } catch (error) {
+            console.error('Error loading reference files:', error);
+          } finally {
+            setLoadingReferenceFiles(false);
+          }
         }
       }
     } catch (error) {
@@ -234,7 +256,7 @@ export default function ManualGradingModal({ attemptId, onClose, onSave }) {
   const currentFile = currentFiles[selectedFileIndex];
 
   return (
-    <div style={styles.overlay} onClick={onClose}>
+    <div style={styles.overlay}>
       <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="modern-card-header">
@@ -368,94 +390,195 @@ export default function ManualGradingModal({ attemptId, onClose, onSave }) {
                 </div>
               </div>
 
-              {/* Selector de versión de archivos */}
-              {(attempt.manualFiles.length > 0 || attempt.submissionFiles.length > 0) && (
-                <div className="mb-3">
-                  <label className="form-label fw-bold">
-                    <i className="fas fa-code-branch me-2"></i>
-                    Versión de Archivos:
-                  </label>
-                  <div className="btn-group w-100" role="group">
-                    <button
-                      type="button"
-                      className={`btn ${fileVersion === 'manual' ? 'btn-primary' : 'btn-outline-secondary'}`}
-                      onClick={() => handleVersionChange('manual')}
-                    >
-                      <i className="fas fa-save me-2"></i>
-                      Guardados Manuales
-                      {attempt.manualFiles.length > 0 && (
-                        <span className="badge bg-light text-dark ms-2">{attempt.manualFiles.length}</span>
+              {/* Layout de dos columnas: Solución del Alumno vs Solución de Referencia */}
+              <div className="row mb-3">
+                {/* Columna izquierda: Solución del Alumno */}
+                <div className={referenceFiles.length > 0 ? "col-lg-6 mb-3" : "col-12 mb-3"}>
+                  <div className="modern-card h-100">
+                    <div className="modern-card-header">
+                      <h5 className="modern-card-title mb-0">
+                        <i className="fas fa-user me-2"></i>
+                        Código del Alumno
+                      </h5>
+                    </div>
+                    <div className="modern-card-body">
+                      {/* Selector de versión de archivos */}
+                      {(attempt.manualFiles.length > 0 || attempt.submissionFiles.length > 0) && (
+                        <div className="mb-3">
+                          <label className="form-label fw-bold">
+                            <i className="fas fa-code-branch me-2"></i>
+                            Versión:
+                          </label>
+                          <div className="btn-group w-100" role="group">
+                            <button
+                              type="button"
+                              className={`btn btn-sm ${fileVersion === 'manual' ? 'btn-primary' : 'btn-outline-secondary'}`}
+                              onClick={() => handleVersionChange('manual')}
+                            >
+                              <i className="fas fa-save me-2"></i>
+                              Guardados
+                              {attempt.manualFiles.length > 0 && (
+                                <span className="badge bg-light text-dark ms-2">{attempt.manualFiles.length}</span>
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              className={`btn btn-sm ${fileVersion === 'submission' ? 'btn-primary' : 'btn-outline-secondary'}`}
+                              onClick={() => handleVersionChange('submission')}
+                            >
+                              <i className="fas fa-paper-plane me-2"></i>
+                              Entrega Final
+                              {attempt.submissionFiles.length > 0 && (
+                                <span className="badge bg-light text-dark ms-2">{attempt.submissionFiles.length}</span>
+                              )}
+                            </button>
+                          </div>
+                          <div className="form-text">
+                            {fileVersion === 'submission' 
+                              ? 'Archivos enviados al finalizar el examen'
+                              : 'Archivos guardados durante el examen (Ctrl+S)'
+                            }
+                          </div>
+                        </div>
                       )}
-                    </button>
-                    <button
-                      type="button"
-                      className={`btn ${fileVersion === 'submission' ? 'btn-primary' : 'btn-outline-secondary'}`}
-                      onClick={() => handleVersionChange('submission')}
-                    >
-                      <i className="fas fa-paper-plane me-2"></i>
-                      Entrega Final
-                      {attempt.submissionFiles.length > 0 && (
-                        <span className="badge bg-light text-dark ms-2">{attempt.submissionFiles.length}</span>
+
+                      {/* Selector de archivos */}
+                      {currentFiles.length > 0 && (
+                        <div className="mb-3">
+                          <label className="form-label fw-bold">
+                            <i className="fas fa-file-code me-2"></i>
+                            Archivo:
+                          </label>
+                          <select 
+                            className="form-select"
+                            value={selectedFileIndex}
+                            onChange={(e) => handleFileChange(parseInt(e.target.value))}
+                          >
+                            {currentFiles.map((file, index) => (
+                              <option key={index} value={index}>
+                                {file.filename}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                       )}
-                    </button>
-                  </div>
-                  <div className="form-text">
-                    {fileVersion === 'submission' 
-                      ? 'Archivos enviados al finalizar el examen'
-                      : 'Archivos guardados durante el examen (Ctrl+S)'
-                    }
-                  </div>
-                </div>
-              )}
 
-              {/* Selector de archivos */}
-              {currentFiles.length > 0 && (
-                <div className="mb-3">
-                  <label className="form-label fw-bold">
-                    <i className="fas fa-file-code me-2"></i>
-                    Archivo:
-                  </label>
-                  <select 
-                    className="form-select"
-                    value={selectedFileIndex}
-                    onChange={(e) => handleFileChange(parseInt(e.target.value))}
-                  >
-                    {currentFiles.map((file, index) => (
-                      <option key={index} value={index}>
-                        {file.filename}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* Editor de código (en memoria) */}
-              {currentFile && (
-                <div className="mb-3">
-                  <label className="form-label fw-bold">
-                    <i className="fas fa-edit me-2"></i>
-                    Código (editable en memoria - no se guarda):
-                  </label>
-                  <textarea
-                    className="form-control"
-                    style={{
-                      fontFamily: 'Monaco, Consolas, "Courier New", monospace',
-                      fontSize: '14px',
-                      minHeight: '300px',
-                      backgroundColor: '#1e1e1e',
-                      color: '#d4d4d4',
-                      border: '1px solid #444'
-                    }}
-                    value={editedCode}
-                    onChange={(e) => setEditedCode(e.target.value)}
-                    spellCheck={false}
-                  />
-                  <div className="form-text text-warning">
-                    <i className="fas fa-info-circle me-1"></i>
-                    Los cambios son solo para prueba. No se guardarán en el intento del alumno.
+                      {/* Editor de código */}
+                      {currentFile && (
+                        <div>
+                          <textarea
+                            className="form-control"
+                            style={{
+                              fontFamily: 'Monaco, Consolas, "Courier New", monospace',
+                              fontSize: '14px',
+                              height: '500px',
+                              backgroundColor: '#1e1e1e',
+                              color: '#d4d4d4',
+                              border: '1px solid #444',
+                              resize: 'vertical'
+                            }}
+                            value={editedCode}
+                            onChange={(e) => setEditedCode(e.target.value)}
+                            spellCheck={false}
+                          />
+                          <div className="form-text text-warning mt-2">
+                            <i className="fas fa-info-circle me-1"></i>
+                            Los cambios son solo para prueba. No se guardarán en el intento del alumno.
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-              )}
+
+                {/* Columna derecha: Solución de Referencia */}
+                {referenceFiles.length > 0 && (
+                  <div className="col-lg-6 mb-3">
+                    {loadingReferenceFiles ? (
+                      <div className="modern-card h-100">
+                        <div className="modern-card-body text-center d-flex align-items-center justify-content-center" style={{ minHeight: '400px' }}>
+                          <div>
+                            <div className="spinner-border text-primary" role="status">
+                              <span className="visually-hidden">Cargando solución de referencia...</span>
+                            </div>
+                            <p className="mt-2 mb-0 text-muted">Cargando solución de referencia...</p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="modern-card h-100">
+                        <div className="modern-card-header">
+                          <h5 className="modern-card-title mb-0">
+                            <i className="fas fa-check-double me-2"></i>
+                            Solución de Referencia
+                          </h5>
+                        </div>
+                        <div className="modern-card-body">
+                          {/* Versión (solo para alinear visualmente) */}
+                          <div className="mb-3">
+                            <label className="form-label fw-bold">
+                              <i className="fas fa-code-branch me-2"></i>
+                              Versión:
+                            </label>
+                            <div className="btn-group w-100" role="group">
+                              <button
+                                type="button"
+                                className="btn btn-sm btn-primary"
+                                disabled
+                              >
+                                <i className="fas fa-check-circle me-2"></i>
+                                Guardados
+                              </button>
+                            </div>
+                            <div className="form-text">
+                              Archivos de referencia del profesor
+                            </div>
+                          </div>
+
+                          {/* Selector de archivos */}
+                          <div className="mb-3">
+                            <label className="form-label fw-bold">
+                              <i className="fas fa-file-code me-2"></i>
+                              Archivo:
+                            </label>
+                            <select 
+                              className="form-select"
+                              value={currentReferenceFile}
+                              onChange={(e) => setCurrentReferenceFile(e.target.value)}
+                            >
+                              {referenceFiles.map((file) => (
+                                <option key={file.filename} value={file.filename}>
+                                  {file.filename}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          
+                          {/* Contenido del archivo actual */}
+                          <div>
+                            <pre style={{
+                              whiteSpace: 'pre-wrap',
+                              fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                              fontSize: '14px',
+                              lineHeight: '1.5',
+                              margin: 0,
+                              padding: '1rem',
+                              backgroundColor: '#1e1e1e',
+                              color: '#d4d4d4',
+                              borderRadius: '0.375rem',
+                              border: '1px solid #444',
+                              height: '500px',
+                              overflowY: 'auto'
+                            }}>
+                              {referenceFiles.find(f => f.filename === currentReferenceFile)?.content || ''}
+                            </pre>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
 
               {/* Opciones de ejecución */}
               <div className="mb-3">
@@ -630,13 +753,11 @@ export default function ManualGradingModal({ attemptId, onClose, onSave }) {
             <div className="modern-card-body">
               <div className="mb-3">
                 <label className="form-label fw-bold">
-                  Calificación (0-100):
+                  Calificación:
                 </label>
                 <input
                   type="number"
                   className="form-control"
-                  min="0"
-                  max="100"
                   step="0.1"
                   value={calificacionManual}
                   onChange={(e) => setCalificacionManual(e.target.value)}
@@ -648,20 +769,16 @@ export default function ManualGradingModal({ attemptId, onClose, onSave }) {
         </div>
 
         {/* Footer con botones */}
-        <div className="modern-card-footer">
-          <div className="d-flex justify-content-end gap-2">
+        <div className="modern-card-footer" style={{ 
+          padding: '20px 24px',
+          borderTop: '2px solid #e5e7eb'
+        }}>
+          <div className="d-flex justify-content-end gap-3">
             <button 
-              className="modern-btn modern-btn-secondary"
-              onClick={onClose}
-              disabled={saving}
-            >
-              <i className="fas fa-times me-2"></i>
-              Cancelar
-            </button>
-            <button 
-              className="modern-btn modern-btn-success"
+              className="modern-btn modern-btn-success modern-btn-lg"
               onClick={handleSaveGrade}
               disabled={saving || !calificacionManual}
+              style={{ minWidth: '200px' }}
             >
               {saving ? (
                 <>
