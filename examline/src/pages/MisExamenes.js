@@ -147,7 +147,7 @@ const MisExamenes = () => {
               <p className="empty-subtitle">
                 {searchTerm || filterType !== "all"
                   ? "Intenta ajustar los filtros de búsqueda"
-                  : "Comienza creando tu primer examen para gestionar evaluaciones"}
+                  : "Comienza creando tu primer examen"}
               </p>
               {!searchTerm && filterType === "all" && (
                 <button 
