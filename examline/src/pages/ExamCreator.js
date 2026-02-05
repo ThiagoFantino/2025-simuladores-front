@@ -427,7 +427,10 @@ const ExamCreator = () => {
                   <span className="btn-text">Descartar</span>
                 </button>
               )}
-              <BackToMainButton />
+              <BackToMainButton 
+                customPath="/mis-examenes"
+                customLabel={<><i className="fas fa-arrow-left me-2"></i>Volver a Mis Exámenes</>}
+              />
             </div>
           </div>
         </div>

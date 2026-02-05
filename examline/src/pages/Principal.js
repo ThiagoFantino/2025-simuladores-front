@@ -1,42 +1,12 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../components/action-cards.css";
 import UserHeader from "../components/UserHeader";
-import { useAuth } from "../contexts/AuthContext";
-import { getExams } from "../services/api";
 
 const Principal = () => {
-  const [exams, setExams] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [showInstructivo, setShowInstructivo] = useState(false);
   const navigate = useNavigate();
-  const { user } = useAuth();
-
-  useEffect(() => {
-    const fetchExams = async () => {
-      try {
-        setLoading(true);
-        setError("");
-        const data = await getExams();
-        setExams(Array.isArray(data) ? data : []);
-      } catch (err) {
-        console.error("Error fetching exams:", err);
-        setError(err.message || "Error al cargar los exámenes");
-        setExams([]); // Ensure it's always an array
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (user) {
-      fetchExams();
-    }
-  }, [user]);
-
-  const handleCrearExamen = () => navigate("/exam-creator");
-  const handleVerExamen = (examId) => navigate(`/examen/${examId}`);
 
   return (
     <div className="container-fluid container-lg py-5 px-3 px-md-4">
@@ -71,7 +41,7 @@ const Principal = () => {
                     <div className="step-content">
                       <h5 className="step-title">1. Crear Exámenes</h5>
                       <p className="step-description">
-                        Hacé clic en <strong>"Crear Nuevo Examen"</strong> para diseñar evaluaciones. Puedes crear dos tipos de examenes: 
+                        Hacé clic en <strong>"Ir a Mis Exámenes"</strong> para ver todos tus exámenes o crear uno nuevo. Puedes crear dos tipos de examenes: 
                         <strong> Múltiple Choice</strong> o <strong> Programación</strong>.
                       </p>
                     </div>
@@ -103,8 +73,8 @@ const Principal = () => {
       <div className="modern-card mb-4">
         <div className="modern-card-header">
           <h2 className="page-title mb-0">
-            <i className="fas fa-chalkboard-teacher me-2"></i>
-            <span className="title-text">Panel de Profesor</span>
+            <i className="fas fa-rocket me-2"></i>
+            <span className="title-text">Acciones Rápidas</span>
           </h2>
         </div>
         <div className="modern-card-body">
@@ -116,18 +86,18 @@ const Principal = () => {
                 </div>
                 <div className="action-content">
                   <h5 className="action-title">
-                    <i className="fas fa-plus-circle text-primary me-2"></i>
-                    Crear Examen
+                    <i className="fas fa-folder-open text-primary me-2"></i>
+                    Gestionar Exámenes
                   </h5>
                   <p className="action-description text-muted mb-3">
-                    Comienza diseñando tu examen de múltiple choice o programación
+                    Ve todos tus exámenes, crea nuevos o edita los existentes
                   </p>
                   <button 
                     className="modern-btn modern-btn-primary w-100" 
-                    onClick={handleCrearExamen}
+                    onClick={() => navigate("/mis-examenes")}
                   >
-                    <i className="fas fa-plus me-2"></i>
-                    <span className="btn-text">Crear Nuevo Examen</span>
+                    <i className="fas fa-folder-open me-2"></i>
+                    <span className="btn-text">Ir a Mis Exámenes</span>
                   </button>
                 </div>
               </div>
@@ -156,90 +126,6 @@ const Principal = () => {
               </div>
             </div>
           </div>
-        </div>
-      </div>
-
-      <div className="modern-card">
-        <div className="modern-card-header">
-          <h3 className="modern-card-title">Exámenes Creados</h3>
-        </div>
-        <div className="modern-card-body">
-          {loading ? (
-            <div className="loading-container">
-              <div className="modern-spinner"></div>
-              <p>Cargando exámenes...</p>
-            </div>
-          ) : error ? (
-            <div className="error-message">
-              <i className="fas fa-exclamation-triangle"></i>
-              {error}
-            </div>
-          ) : exams.length === 0 ? (
-            <div className="empty-state">
-              <div className="empty-icon">
-                <i className="fas fa-file-alt"></i>
-              </div>
-              <h4 className="empty-title">No hay exámenes creados</h4>
-              <p className="empty-subtitle">
-                Comienza creando tu primer examen para gestionar evaluaciones
-              </p>
-              <button 
-                className="modern-btn modern-btn-primary"
-                onClick={handleCrearExamen}
-              >
-                <i className="fas fa-plus"></i>
-                Crear mi primer examen
-              </button>
-            </div>
-          ) : (
-            <div className="exams-grid">
-              {(Array.isArray(exams) ? exams : []).map((exam, index) => (
-                <div key={exam.id} className="exam-grid-item">
-                  <div className={`exam-card fade-in-up`} style={{animationDelay: `${index * 0.1}s`}}>
-                    <div className="exam-card-header">
-                      <h5 className="exam-title">{exam.titulo}</h5>
-                      <span className="exam-badge">
-                        <i className="fas fa-check-circle"></i>
-                        <span className="badge-text">Activo</span>
-                      </span>
-                    </div>
-                    <div className="exam-card-body">
-                      <div className="exam-info">
-                        <div className="exam-info-item">
-                          <i className="fas fa-hashtag"></i>
-                          <span>Código: {exam.id}</span>
-                        </div>
-                        <div className="exam-info-item">
-                          <i className="fas fa-tag"></i>
-                          <span>Tipo: {exam.tipo === 'programming' ? 'Programación' : 'Múltiple Choice'}</span>
-                        </div>
-                        {exam.tipo === 'programming' ? (
-                          <div className="exam-info-item">
-                            <i className="fas fa-code"></i>
-                            <span>Lenguaje: {exam.lenguajeProgramacion === 'python' ? 'Python' : 'JavaScript'}</span>
-                          </div>
-                        ) : (
-                          <div className="exam-info-item">
-                            <i className="fas fa-question-circle"></i>
-                            <span>Preguntas: {exam.preguntas?.length || 0}</span>
-                          </div>
-                        )}
-                      </div>
-                      <button
-                        className="modern-btn modern-btn-primary w-100 view-exam-btn"
-                        onClick={() => handleVerExamen(exam.id)}
-                      >
-                        <i className="fas fa-eye me-2"></i>
-                        <span className="btn-text">
-                          {exam.tipo === 'programming' ? 'Ver examen' : 'Ver preguntas'}
-                        </span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       </div>
     </div>

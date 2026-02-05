@@ -5,6 +5,7 @@ import ScrollToTop from "./components/ScrollToTop";
 import Login from "./pages/Login";
 import Registro from "./pages/Registro";
 import Principal from "./pages/Principal";
+import MisExamenes from "./pages/MisExamenes";
 import ExamCreator from "./pages/ExamCreator";
 import ExamView from "./pages/ExamView";
 import UserSettingsPage from "./pages/userSettings";
@@ -32,6 +33,11 @@ function App() {
           <Route path="/principal" element={
             <ProfessorRoute>
               <Principal />
+            </ProfessorRoute>
+          } />
+          <Route path="/mis-examenes" element={
+            <ProfessorRoute>
+              <MisExamenes />
             </ProfessorRoute>
           } />
           <Route path="/exam-creator" element={

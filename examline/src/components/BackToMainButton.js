@@ -3,12 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import '../modern-examline.css';
 
-const BackToMainButton = ({ className = "modern-btn modern-btn-secondary" }) => {
+const BackToMainButton = ({ className = "modern-btn modern-btn-secondary", customPath = null, customLabel = null }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
 
   const handleBackToMain = () => {
-    if (user?.rol === "professor") {
+    if (customPath) {
+      navigate(customPath);
+    } else if (user?.rol === "professor") {
       navigate("/principal");
     } else {
       navigate("/student-exam");
@@ -16,6 +18,10 @@ const BackToMainButton = ({ className = "modern-btn modern-btn-secondary" }) => 
   };
 
   const getButtonContent = () => {
+    if (customLabel) {
+      return customLabel;
+    }
+    
     if (user?.rol === "professor") {
       return (
         <>
