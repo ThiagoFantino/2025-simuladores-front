@@ -431,14 +431,14 @@ const openExam = async (examId, windowId, token, window) => {
             <div className="modern-card-body">
               <div className="row g-3">
                 <div className="col-lg-3 col-md-6">
-                  <label className="form-label fw-semibold">Título</label>
+                  <label className="form-label fw-semibold">Nombre</label>
                   <input 
                     type="text" 
                     className="form-control modern-input"
                     name="materia"
                     value={filters.materia}
                     onChange={handleFilterChange}
-                    placeholder="Buscar por título del examen"
+                    placeholder="Buscar por nombre de ventana"
                   />
                 </div>
                 <div className="col-lg-3 col-md-6">

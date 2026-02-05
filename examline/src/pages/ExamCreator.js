@@ -893,63 +893,109 @@ const ExamCreator = () => {
                       />
                     </div>
                     
-                    {/* Toggle para guardar solución de referencia */}
+                    {/* Opciones de radio para guardar solución de referencia */}
                     <div className="mt-3 p-3" style={{
-                      backgroundColor: saveReferenceSolution ? '#d3f9d8' : '#ffe0e0',
+                      backgroundColor: '#f8f9fa',
                       borderRadius: '8px',
-                      border: `2px solid ${saveReferenceSolution ? '#2f9e44' : '#c92a2a'}`,
-                      transition: 'all 0.3s ease'
+                      border: '2px solid #dee2e6'
                     }}>
-                      <div className="d-flex align-items-center justify-content-between">
-                        <div style={{ flex: 1 }}>
-                          <div className="d-flex align-items-center gap-2 mb-1">
-                            <i className={`fas ${saveReferenceSolution ? 'fa-check-circle' : 'fa-times-circle'}`} style={{ 
-                              color: saveReferenceSolution ? '#2f9e44' : '#c92a2a',
-                              transition: 'all 0.3s ease'
-                            }}></i>
-                            <strong style={{ 
-                              fontSize: '0.95rem',
-                              color: saveReferenceSolution ? '#2f9e44' : '#c92a2a',
-                              transition: 'color 0.3s ease'
-                            }}>
-                              {saveReferenceSolution 
-                                ? 'Guardar esta solución de referencia' 
-                                : 'No guardar esta solución'}
-                            </strong>
+                      <div className="mb-2">
+                        <strong style={{ fontSize: '0.95rem', color: '#495057' }}>
+                          <i className="fas fa-save me-2"></i>
+                          Solución de Referencia
+                        </strong>
+                      </div>
+                      
+                      {/* Opción 1: Guardar */}
+                      <div 
+                        className="form-check p-3 mb-2" 
+                        style={{
+                          backgroundColor: saveReferenceSolution ? '#d3f9d8' : 'white',
+                          borderRadius: '6px',
+                          border: `2px solid ${saveReferenceSolution ? '#2f9e44' : '#dee2e6'}`,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onClick={() => setSaveReferenceSolution(true)}
+                      >
+                        <input
+                          className="form-check-input"
+                          type="radio"
+                          name="saveReferenceSolution"
+                          id="saveReferenceYes"
+                          checked={saveReferenceSolution}
+                          onChange={() => setSaveReferenceSolution(true)}
+                          style={{ cursor: 'pointer' }}
+                        />
+                        <label 
+                          className="form-check-label ms-2" 
+                          htmlFor="saveReferenceYes"
+                          style={{ cursor: 'pointer', width: '100%' }}
+                        >
+                          <div className="d-flex align-items-start">
+                            <div>
+                              <strong style={{ 
+                                color: saveReferenceSolution ? '#2f9e44' : '#495057'
+                              }}>
+                                <i className="fas fa-check-circle me-2"></i>
+                                Guardar esta solución
+                              </strong>
+                              <div style={{ 
+                                fontSize: '0.875rem',
+                                color: saveReferenceSolution ? '#2b8a3e' : '#6c757d',
+                                marginTop: '0.25rem'
+                              }}>
+                                Se guardará como solución de referencia
+                              </div>
+                            </div>
                           </div>
-                          <small style={{ 
-                            display: 'block', 
-                            marginLeft: '26px',
-                            color: saveReferenceSolution ? '#2b8a3e' : '#a61e4d',
-                            transition: 'color 0.3s ease'
-                          }}>
-                            {saveReferenceSolution 
-                              ? 'Esta solución se guardará como referencia al crear el examen.'
-                              : 'La solución no se guardará. Puedes probar el código sin necesidad de guardarlo.'}
-                          </small>
-                        </div>
-                        
-                        {/* Toggle Switch */}
-                        <div className="form-check form-switch" style={{ 
-                          paddingLeft: 0,
-                          marginLeft: '1rem'
-                        }}>
-                          <input
-                            className="form-check-input"
-                            type="checkbox"
-                            role="switch"
-                            id="saveReferenceSolutionToggle"
-                            checked={saveReferenceSolution}
-                            onChange={(e) => setSaveReferenceSolution(e.target.checked)}
-                            style={{
-                              width: '3rem',
-                              height: '1.5rem',
-                              cursor: 'pointer',
-                              backgroundColor: saveReferenceSolution ? '#2f9e44' : '#c92a2a',
-                              borderColor: saveReferenceSolution ? '#2f9e44' : '#c92a2a'
-                            }}
-                          />
-                        </div>
+                        </label>
+                      </div>
+                      
+                      {/* Opción 2: No guardar */}
+                      <div 
+                        className="form-check p-3" 
+                        style={{
+                          backgroundColor: !saveReferenceSolution ? '#ffe0e0' : 'white',
+                          borderRadius: '6px',
+                          border: `2px solid ${!saveReferenceSolution ? '#c92a2a' : '#dee2e6'}`,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease'
+                        }}
+                        onClick={() => setSaveReferenceSolution(false)}
+                      >
+                        <input
+                          className="form-check-input"
+                          type="radio"
+                          name="saveReferenceSolution"
+                          id="saveReferenceNo"
+                          checked={!saveReferenceSolution}
+                          onChange={() => setSaveReferenceSolution(false)}
+                          style={{ cursor: 'pointer' }}
+                        />
+                        <label 
+                          className="form-check-label ms-2" 
+                          htmlFor="saveReferenceNo"
+                          style={{ cursor: 'pointer', width: '100%' }}
+                        >
+                          <div className="d-flex align-items-start">
+                            <div>
+                              <strong style={{ 
+                                color: !saveReferenceSolution ? '#c92a2a' : '#495057'
+                              }}>
+                                <i className="fas fa-times-circle me-2"></i>
+                                No guardar esta solución
+                              </strong>
+                              <div style={{ 
+                                fontSize: '0.875rem',
+                                color: !saveReferenceSolution ? '#a61e4d' : '#6c757d',
+                                marginTop: '0.25rem'
+                              }}>
+                                Solo para probar el código sin guardarlo como referencia
+                              </div>
+                            </div>
+                          </div>
+                        </label>
                       </div>
                     </div>
                   </div>
