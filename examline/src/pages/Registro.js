@@ -10,6 +10,7 @@ const Registro = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isProfessor, setIsProfessor] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
 
   const [nombreError, setNombreError] = useState("");
@@ -202,13 +203,28 @@ const Registro = () => {
               </div>
 
               {/* Contraseña */}
-              <div className="mb-3 text-start">
-                <label htmlFor="password" className="form-label d-flex align-items-center gap-2" style={{ fontSize: '0.9rem', marginBottom: '0.5rem' }}>
-                  <i className="fas fa-lock text-muted"></i>
-                  Contraseña
-                </label>
+              <div className="mb-3 text-start d-flex flex-column">
+                <div className="d-flex justify-content-between align-items-center mb-1">
+                  <label
+                    htmlFor="password"
+                    className="form-label d-flex align-items-center gap-2 mb-0"
+                    style={{ fontSize: '0.9rem' }}
+                  >
+                    <i className="fas fa-lock text-muted"></i>
+                    Contraseña
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="btn btn-link p-0"
+                    style={{ fontSize: '0.85rem' }}
+                  >
+                    <i className={`fas ${showPassword ? "fa-eye-slash" : "fa-eye"} me-1`}></i>
+                    {showPassword ? "Ocultar" : "Mostrar"}
+                  </button>
+                </div>
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   className={`form-control ${passwordError ? "is-invalid" : ""}`}
                   id="password"
                   placeholder="Crea una contraseña segura"
@@ -224,11 +240,15 @@ const Registro = () => {
                     fontSize: '0.9rem'
                   }}
                 />
-                <div className="form-text" style={{ color: 'var(--text-color-3)', fontSize: '0.75rem', marginTop: '0.25rem' }}>
+                <div
+                  className="form-text"
+                  style={{ color: 'var(--text-color-3)', fontSize: '0.75rem', marginTop: '0.25rem' }}
+                >
                   8+ caracteres, mayúscula, minúscula, número y carácter especial.
                 </div>
                 {passwordError && <div className="invalid-feedback">{passwordError}</div>}
               </div>
+
 
               {/* Switch de rol */}
               <div className="mb-3">
