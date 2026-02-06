@@ -925,8 +925,7 @@ export default function ExamWindowsPage() {
 
       {showCreateModal && (
         <div 
-          className="modal-backdrop-fade" 
-          onClick={() => setShowCreateModal(false)}
+          className="modal-backdrop-fade"
         >
           <div className="modal show" style={{ display: 'block' }}>
             <div 

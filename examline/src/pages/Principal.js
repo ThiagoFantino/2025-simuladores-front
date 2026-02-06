@@ -87,7 +87,7 @@ const Principal = () => {
                 <div className="action-content">
                   <h5 className="action-title">
                     <i className="fas fa-folder-open text-primary me-2"></i>
-                    Gestionar Exámenes
+                    Crear Exámenes
                   </h5>
                   <p className="action-description text-muted mb-3">
                     Mirá todos tus exámenes o creá nuevos
@@ -110,7 +110,7 @@ const Principal = () => {
                 <div className="action-content">
                   <h5 className="action-title">
                     <i className="fas fa-tasks text-success me-2"></i>
-                    Gestionar y Corregir
+                    Gestionar y Corregir Ventanas de Exámenes
                   </h5>
                   <p className="action-description text-muted mb-3">
                     Creá ventanas de examen para inscribirse y corregí los exámenes
