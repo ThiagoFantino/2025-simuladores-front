@@ -53,6 +53,8 @@ const MoodleIntegration = ({ windowId, onClose }) => {
   }, [loadSyncStatus]);
 
   const handleVerifyConnection = async () => {
+    if (loading) return; // Evitar spam
+    
     if (!moodleUrl || !moodleToken) {
       setConnectionError('Por favor ingrese URL y token de Moodle');
       return;
@@ -81,6 +83,8 @@ const MoodleIntegration = ({ windowId, onClose }) => {
   };
 
   const handleLoadAssignments = async () => {
+    if (loading) return; // Evitar spam
+    
     if (!moodleCourseId) {
       setAssignmentsError('Por favor ingrese el ID del curso');
       return;
@@ -108,6 +112,8 @@ const MoodleIntegration = ({ windowId, onClose }) => {
   };
 
   const handleSaveConfiguration = async () => {
+    if (loading) return; // Evitar spam
+    
     setLoading(true);
     setConfigError('');
     setConfigSuccess('');
@@ -132,6 +138,7 @@ const MoodleIntegration = ({ windowId, onClose }) => {
   };
 
   const handleSyncGrades = async () => {
+    if (syncing) return; // Evitar spam
 
     setSyncing(true);
     setSyncError('');

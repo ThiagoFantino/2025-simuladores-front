@@ -98,6 +98,12 @@ export default function ManualGradingModal({ attemptId, onClose, onSave }) {
     }
   };
 
+  const handleUseAutomaticGrade = () => {
+    if (attempt && attempt.puntaje !== null) {
+      setCalificacionManual(attempt.puntaje.toFixed(1));
+    }
+  };
+
   const getCurrentFiles = () => {
     if (!attempt) return [];
     return fileVersion === 'submission' ? attempt.submissionFiles : attempt.manualFiles;
@@ -1069,6 +1075,19 @@ export default function ManualGradingModal({ attemptId, onClose, onSave }) {
                   onChange={(e) => setCalificacionManual(e.target.value)}
                   placeholder="Ingrese la calificación..."
                 />
+                {attempt && attempt.puntaje !== null && (
+                  <div className="mt-2">
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-primary"
+                      onClick={handleUseAutomaticGrade}
+                      title="Usar la nota automática como calificación manual"
+                    >
+                      <i className="fas fa-robot me-2"></i>
+                      Usar nota automática ({attempt.puntaje.toFixed(1)}%)
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
