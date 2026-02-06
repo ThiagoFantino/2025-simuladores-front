@@ -571,9 +571,7 @@ export default function ExamWindowResultsPage() {
       {/* Moodle Integration Modal */}
       {showMoodleModal && (
         <>
-          <div 
-            onClick={() => setShowMoodleModal(false)}
-            style={{
+          <div style={{
               position: 'fixed',
               top: 0,
               left: 0,

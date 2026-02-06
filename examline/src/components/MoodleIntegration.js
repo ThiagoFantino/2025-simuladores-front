@@ -274,12 +274,6 @@ const MoodleIntegration = ({ windowId, onClose }) => {
           </div>
         )}
       </div>
-
-      <div className="moodle-integration-footer">
-        <button onClick={onClose} className="btn-secondary" disabled={loading || syncing}>
-          Cerrar
-        </button>
-      </div>
     </div>
   );
 };

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { getReferenceFiles } from '../services/api';
+import Editor from '@monaco-editor/react';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import '../modern-examline.css';
 
@@ -400,6 +401,10 @@ export default function ManualGradingModal({ attemptId, onClose, onSave }) {
                         <i className="fas fa-user me-2"></i>
                         Código del Alumno
                       </h5>
+                      <small className="text-muted" style={{ fontSize: '0.8rem', fontWeight: 'normal' }}>
+                        <i className="fas fa-info-circle me-1"></i>
+                        El código puede editarse temporalmente para pruebas sin modificar el archivo original
+                      </small>
                     </div>
                     <div className="modern-card-body">
                       {/* Selector de versión de archivos */}
@@ -466,24 +471,27 @@ export default function ManualGradingModal({ attemptId, onClose, onSave }) {
                       {/* Editor de código */}
                       {currentFile && (
                         <div>
-                          <textarea
-                            className="form-control"
-                            style={{
-                              fontFamily: 'Monaco, Consolas, "Courier New", monospace',
-                              fontSize: '14px',
-                              height: '500px',
-                              backgroundColor: '#1e1e1e',
-                              color: '#d4d4d4',
-                              border: '1px solid #444',
-                              resize: 'vertical'
-                            }}
-                            value={editedCode}
-                            onChange={(e) => setEditedCode(e.target.value)}
-                            spellCheck={false}
-                          />
-                          <div className="form-text text-warning mt-2">
-                            <i className="fas fa-info-circle me-1"></i>
-                            Los cambios son solo para prueba. No se guardarán en el intento del alumno.
+                          <div style={{ height: '500px', border: '1px solid #444', borderRadius: '0.375rem', overflow: 'hidden' }}>
+                            <Editor
+                              height="100%"
+                              language={attempt.exam.lenguajeProgramacion}
+                              theme="vs-dark"
+                              value={editedCode}
+                              onChange={(value) => setEditedCode(value || '')}
+                              options={{
+                                selectOnLineNumbers: true,
+                                roundedSelection: false,
+                                readOnly: false,
+                                cursorStyle: 'line',
+                                automaticLayout: true,
+                                scrollBeyondLastLine: false,
+                                minimap: { enabled: true },
+                                fontSize: 14,
+                                lineNumbers: 'on',
+                                wordWrap: 'on',
+                                tabSize: attempt.exam.lenguajeProgramacion === 'python' ? 4 : 2
+                              }}
+                            />
                           </div>
                         </div>
                       )}
@@ -512,6 +520,10 @@ export default function ManualGradingModal({ attemptId, onClose, onSave }) {
                             <i className="fas fa-check-double me-2"></i>
                             Solución de Referencia
                           </h5>
+                          <small className="text-muted" style={{ fontSize: '0.8rem', fontWeight: 'normal' }}>
+                            <i className="fas fa-info-circle me-1"></i>
+                            Solución guardada al crear el examen
+                          </small>
                         </div>
                         <div className="modern-card-body">
                           {/* Versión (solo para alinear visualmente) */}
@@ -555,23 +567,26 @@ export default function ManualGradingModal({ attemptId, onClose, onSave }) {
                           </div>
                           
                           {/* Contenido del archivo actual */}
-                          <div>
-                            <pre style={{
-                              whiteSpace: 'pre-wrap',
-                              fontFamily: 'Consolas, Monaco, "Courier New", monospace',
-                              fontSize: '14px',
-                              lineHeight: '1.5',
-                              margin: 0,
-                              padding: '1rem',
-                              backgroundColor: '#1e1e1e',
-                              color: '#d4d4d4',
-                              borderRadius: '0.375rem',
-                              border: '1px solid #444',
-                              height: '500px',
-                              overflowY: 'auto'
-                            }}>
-                              {referenceFiles.find(f => f.filename === currentReferenceFile)?.content || ''}
-                            </pre>
+                          <div style={{ height: '500px', border: '1px solid #444', borderRadius: '0.375rem', overflow: 'hidden' }}>
+                            <Editor
+                              height="100%"
+                              language={attempt.exam.lenguajeProgramacion}
+                              theme="vs-dark"
+                              value={referenceFiles.find(f => f.filename === currentReferenceFile)?.content || ''}
+                              options={{
+                                selectOnLineNumbers: true,
+                                roundedSelection: false,
+                                readOnly: true,
+                                cursorStyle: 'line',
+                                automaticLayout: true,
+                                scrollBeyondLastLine: false,
+                                minimap: { enabled: true },
+                                fontSize: 14,
+                                lineNumbers: 'on',
+                                wordWrap: 'on',
+                                tabSize: attempt.exam.lenguajeProgramacion === 'python' ? 4 : 2
+                              }}
+                            />
                           </div>
                         </div>
                       </div>
@@ -623,7 +638,7 @@ export default function ManualGradingModal({ attemptId, onClose, onSave }) {
                   ) : (
                     <>
                       <i className="fas fa-play me-2"></i>
-                      Ejecutar Código
+                      Ejecutar Código del Alumno
                     </>
                   )}
                 </button>
@@ -640,52 +655,343 @@ export default function ManualGradingModal({ attemptId, onClose, onSave }) {
                   </div>
                   <div className="modern-card-body">
                     {executionResult.error ? (
-                      <div className="alert alert-danger mb-0">
-                        <strong>Error:</strong>
-                        <pre className="mb-0 mt-2">{executionResult.error}</pre>
+                      <div style={{
+                        background: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)',
+                        border: '2px solid #dc2626',
+                        borderRadius: '12px',
+                        padding: '20px',
+                        marginBottom: 0
+                      }}>
+                        <div className="d-flex align-items-start">
+                          <div style={{
+                            width: '48px',
+                            height: '48px',
+                            borderRadius: '50%',
+                            background: '#dc2626',
+                            color: 'white',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '1.5rem',
+                            flexShrink: 0,
+                            marginRight: '16px'
+                          }}>
+                            <i className="fas fa-exclamation-circle"></i>
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <h5 style={{ color: '#991b1b', marginBottom: '8px', fontWeight: 'bold' }}>
+                              Error de Ejecución
+                            </h5>
+                            <pre style={{
+                              backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                              padding: '12px',
+                              borderRadius: '8px',
+                              border: '1px solid #fca5a5',
+                              marginBottom: 0,
+                              fontSize: '13px',
+                              color: '#7f1d1d',
+                              whiteSpace: 'pre-wrap',
+                              wordWrap: 'break-word'
+                            }}>
+                              {executionResult.error}
+                            </pre>
+                          </div>
+                        </div>
                       </div>
                     ) : (
                       <>
                         {executionResult.score !== undefined && (
-                          <div className={`alert ${executionResult.score === 100 ? 'alert-success' : executionResult.score >= 50 ? 'alert-warning' : 'alert-danger'} mb-3`}>
-                            <strong>Puntaje: {executionResult.score.toFixed(1)}%</strong>
-                            <div className="small mt-1">
-                              {executionResult.passedTests} de {executionResult.totalTests} tests pasados
+                          <div style={{
+                            background: executionResult.score === 100 
+                              ? 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)'
+                              : executionResult.score >= 50
+                              ? 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)'
+                              : 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)',
+                            border: `2px solid ${
+                              executionResult.score === 100 ? '#10b981' 
+                              : executionResult.score >= 50 ? '#f59e0b' 
+                              : '#ef4444'
+                            }`,
+                            borderRadius: '10px',
+                            padding: '16px',
+                            marginBottom: '20px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '16px'
+                          }}>
+                            <div style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              width: '48px',
+                              height: '48px',
+                              borderRadius: '50%',
+                              background: executionResult.score === 100 ? '#10b981' 
+                                : executionResult.score >= 50 ? '#f59e0b' 
+                                : '#ef4444',
+                              color: 'white',
+                              fontSize: '1.5rem',
+                              flexShrink: 0,
+                              boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+                            }}>
+                              <i className={`fas ${
+                                executionResult.score === 100 ? 'fa-check' 
+                                : executionResult.score >= 50 ? 'fa-minus' 
+                                : 'fa-times'
+                              }`}></i>
+                            </div>
+                            <div style={{ flex: 1 }}>
+                              <h4 style={{
+                                color: executionResult.score === 100 ? '#065f46' 
+                                  : executionResult.score >= 50 ? '#92400e' 
+                                  : '#991b1b',
+                                fontSize: '1.8rem',
+                                fontWeight: 'bold',
+                                margin: 0,
+                                marginBottom: '4px'
+                              }}>
+                                {executionResult.score.toFixed(1)}%
+                              </h4>
+                              <div style={{
+                                fontSize: '0.9rem',
+                                color: executionResult.score === 100 ? '#047857' 
+                                  : executionResult.score >= 50 ? '#b45309' 
+                                  : '#b91c1c',
+                                fontWeight: '600'
+                              }}>
+                                {executionResult.passedTests} de {executionResult.totalTests} tests pasados
+                              </div>
                             </div>
                           </div>
                         )}
 
                         {executionResult.testResults && executionResult.testResults.length > 0 && (
                           <div>
-                            <h6>Resultados por Test:</h6>
-                            {executionResult.testResults.map((test, idx) => (
-                              <div key={idx} className={`alert ${test.passed ? 'alert-success' : 'alert-danger'} mb-2`}>
-                                <div className="d-flex justify-content-between">
-                                  <strong>Test {idx + 1}</strong>
-                                  <span>{test.passed ? '✓ Pasado' : '✗ Fallido'}</span>
+                            <h6 style={{ 
+                              marginBottom: '16px', 
+                              color: '#374151', 
+                              fontWeight: '600',
+                              fontSize: '1.1rem',
+                              display: 'flex',
+                              alignItems: 'center'
+                            }}>
+                              <i className="fas fa-list-check me-2" style={{ color: '#6366f1' }}></i>
+                              Resultados por Test:
+                            </h6>
+                            <div style={{ display: 'grid', gap: '12px' }}>
+                              {executionResult.testResults.map((test, idx) => (
+                                <div key={idx} style={{
+                                  background: test.passed 
+                                    ? 'linear-gradient(to right, #f0fdf4 0%, #dcfce7 100%)'
+                                    : 'linear-gradient(to right, #fef2f2 0%, #fee2e2 100%)',
+                                  border: `2px solid ${test.passed ? '#22c55e' : '#ef4444'}`,
+                                  borderRadius: '10px',
+                                  padding: '16px',
+                                  transition: 'transform 0.2s, box-shadow 0.2s'
+                                }}>
+                                  <div className="d-flex justify-content-between align-items-center mb-2">
+                                    <div className="d-flex align-items-center">
+                                      <div style={{
+                                        width: '32px',
+                                        height: '32px',
+                                        borderRadius: '50%',
+                                        background: test.passed ? '#22c55e' : '#ef4444',
+                                        color: 'white',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        marginRight: '12px',
+                                        fontWeight: 'bold',
+                                        fontSize: '0.9rem'
+                                      }}>
+                                        {test.passed ? '✓' : '✗'}
+                                      </div>
+                                      <strong style={{ 
+                                        fontSize: '1rem',
+                                        color: test.passed ? '#166534' : '#991b1b'
+                                      }}>
+                                        Test {idx + 1}
+                                        {test.description && `: ${test.description}`}
+                                      </strong>
+                                    </div>
+                                    <span style={{
+                                      padding: '4px 12px',
+                                      borderRadius: '20px',
+                                      fontSize: '0.85rem',
+                                      fontWeight: '600',
+                                      background: test.passed ? '#22c55e' : '#ef4444',
+                                      color: 'white'
+                                    }}>
+                                      {test.passed ? 'Pasado' : 'Fallido'}
+                                    </span>
+                                  </div>
+                                  
+                                  <div style={{ marginTop: '12px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                                    {test.input && (
+                                      <div style={{
+                                        background: 'rgba(255, 255, 255, 0.7)',
+                                        padding: '10px',
+                                        borderRadius: '6px',
+                                        border: '1px solid rgba(0,0,0,0.1)',
+                                        flex: '1 1 calc(33.333% - 8px)',
+                                        minWidth: '200px'
+                                      }}>
+                                        <div style={{ 
+                                          fontSize: '0.75rem', 
+                                          color: '#6b7280', 
+                                          fontWeight: '600',
+                                          marginBottom: '4px',
+                                          textTransform: 'uppercase',
+                                          letterSpacing: '0.5px'
+                                        }}>
+                                          📥 Input
+                                        </div>
+                                        <pre style={{
+                                          margin: 0,
+                                          fontSize: '0.85rem',
+                                          color: '#374151',
+                                          whiteSpace: 'pre-wrap',
+                                          wordWrap: 'break-word',
+                                          fontFamily: 'Consolas, Monaco, monospace'
+                                        }}>
+                                          {test.input}
+                                        </pre>
+                                      </div>
+                                    )}
+                                    
+                                    {test.expectedOutput && (
+                                      <div style={{
+                                        background: 'rgba(255, 255, 255, 0.7)',
+                                        padding: '10px',
+                                        borderRadius: '6px',
+                                        border: '1px solid rgba(0,0,0,0.1)',
+                                        flex: '1 1 calc(33.333% - 8px)',
+                                        minWidth: '200px'
+                                      }}>
+                                        <div style={{ 
+                                          fontSize: '0.75rem', 
+                                          color: '#22c55e', 
+                                          fontWeight: '600',
+                                          marginBottom: '4px',
+                                          textTransform: 'uppercase',
+                                          letterSpacing: '0.5px'
+                                        }}>
+                                          ✓ Esperado
+                                        </div>
+                                        <pre style={{
+                                          margin: 0,
+                                          fontSize: '0.85rem',
+                                          color: '#166534',
+                                          whiteSpace: 'pre-wrap',
+                                          wordWrap: 'break-word',
+                                          fontFamily: 'Consolas, Monaco, monospace'
+                                        }}>
+                                          {test.expectedOutput}
+                                        </pre>
+                                      </div>
+                                    )}
+                                    
+                                    {test.actualOutput && (
+                                      <div style={{
+                                        background: 'rgba(255, 255, 255, 0.7)',
+                                        padding: '10px',
+                                        borderRadius: '6px',
+                                        border: `1px solid ${test.passed ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+                                        flex: '1 1 calc(33.333% - 8px)',
+                                        minWidth: '200px'
+                                      }}>
+                                        <div style={{ 
+                                          fontSize: '0.75rem', 
+                                          color: test.passed ? '#22c55e' : '#ef4444', 
+                                          fontWeight: '600',
+                                          marginBottom: '4px',
+                                          textTransform: 'uppercase',
+                                          letterSpacing: '0.5px'
+                                        }}>
+                                          📤 Obtenido
+                                        </div>
+                                        <pre style={{
+                                          margin: 0,
+                                          fontSize: '0.85rem',
+                                          color: test.passed ? '#166534' : '#991b1b',
+                                          whiteSpace: 'pre-wrap',
+                                          wordWrap: 'break-word',
+                                          fontFamily: 'Consolas, Monaco, monospace'
+                                        }}>
+                                          {test.actualOutput}
+                                        </pre>
+                                      </div>
+                                    )}
+                                    
+                                    {test.error && (
+                                      <div style={{
+                                        background: 'rgba(254, 226, 226, 0.8)',
+                                        padding: '10px',
+                                        borderRadius: '6px',
+                                        border: '1px solid #fca5a5',
+                                        flex: '1 1 100%'
+                                      }}>
+                                        <div style={{ 
+                                          fontSize: '0.75rem', 
+                                          color: '#dc2626', 
+                                          fontWeight: '600',
+                                          marginBottom: '4px',
+                                          textTransform: 'uppercase',
+                                          letterSpacing: '0.5px'
+                                        }}>
+                                          ⚠️ Error
+                                        </div>
+                                        <pre style={{
+                                          margin: 0,
+                                          fontSize: '0.85rem',
+                                          color: '#991b1b',
+                                          whiteSpace: 'pre-wrap',
+                                          wordWrap: 'break-word',
+                                          fontFamily: 'Consolas, Monaco, monospace'
+                                        }}>
+                                          {test.error}
+                                        </pre>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
-                                {test.input && <div className="small mt-1"><strong>Input:</strong> {test.input}</div>}
-                                {test.expectedOutput && <div className="small"><strong>Esperado:</strong> {test.expectedOutput}</div>}
-                                {test.actualOutput && <div className="small"><strong>Obtenido:</strong> {test.actualOutput}</div>}
-                                {test.error && <div className="small text-danger"><strong>Error:</strong> {test.error}</div>}
-                              </div>
-                            ))}
+                              ))}
+                            </div>
                           </div>
                         )}
 
                         {executionResult.output && !executionResult.testResults && (
                           <div>
-                            <h6>Salida:</h6>
-                            <pre style={{
-                              backgroundColor: '#f8f9fa',
-                              padding: '1rem',
-                              borderRadius: '0.5rem',
-                              border: '1px solid #dee2e6',
-                              whiteSpace: 'pre-wrap',
-                              wordWrap: 'break-word'
+                            <h6 style={{ 
+                              marginBottom: '12px', 
+                              color: '#374151', 
+                              fontWeight: '600',
+                              fontSize: '1.1rem',
+                              display: 'flex',
+                              alignItems: 'center'
                             }}>
-                              {executionResult.output}
-                            </pre>
+                              <i className="fas fa-terminal me-2" style={{ color: '#6366f1' }}></i>
+                              Salida del Programa:
+                            </h6>
+                            <div style={{
+                              background: 'linear-gradient(135deg, #1e1e1e 0%, #2d2d2d 100%)',
+                              padding: '16px',
+                              borderRadius: '10px',
+                              border: '2px solid #444',
+                              boxShadow: '0 4px 8px rgba(0,0,0,0.2)'
+                            }}>
+                              <pre style={{
+                                color: '#d4d4d4',
+                                margin: 0,
+                                fontSize: '0.9rem',
+                                whiteSpace: 'pre-wrap',
+                                wordWrap: 'break-word',
+                                fontFamily: 'Consolas, Monaco, "Courier New", monospace',
+                                lineHeight: '1.5'
+                              }}>
+                                {executionResult.output}
+                              </pre>
+                            </div>
                           </div>
                         )}
                       </>
