@@ -115,7 +115,7 @@ const Modal = ({
                       <i className={`fas me-2 ${
                         type === 'error' ? 'fa-trash' :
                         type === 'success' ? 'fa-check' :
-                        type === 'warning' ? 'fa-exclamation' :
+                        type === 'warning' ? 'fa-check' :
                         type === 'confirm' ? 'fa-check' :
                         'fa-info'
                       }`}></i>

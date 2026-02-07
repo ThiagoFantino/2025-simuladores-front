@@ -452,18 +452,21 @@ const ExamAttempt = ({ examId: propExamId, onBack }) => {
                             key={j} 
                             className={`exam-option-item ${respuestas[i] === j ? 'selected' : ''}`}
                             onClick={() => {
-                              setRespuestas(prev => ({
-                                ...prev,
-                                [i]: j
-                              }));
+                              if (!submitting) {
+                                setRespuestas(prev => ({
+                                  ...prev,
+                                  [i]: j
+                                }));
+                              }
                             }}
                             style={{
                               padding: '0.75rem 1rem',
                               marginBottom: '0.5rem',
                               border: respuestas[i] === j ? '2px solid #0d6efd' : '1px solid #dee2e6',
                               borderRadius: '8px',
-                              cursor: 'pointer',
+                              cursor: submitting ? 'not-allowed' : 'pointer',
                               backgroundColor: respuestas[i] === j ? '#e7f1ff' : 'white',
+                              opacity: submitting ? 0.6 : 1,
                               transition: 'all 0.2s ease',
                               display: 'flex',
                               alignItems: 'center',

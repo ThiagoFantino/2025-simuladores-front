@@ -1134,6 +1134,7 @@ const ProgrammingExamView = () => {
                         onChange={handleEditorChange}
                         options={{
                           ...editorOptions,
+                          readOnly: saving || fileOperationLoading,
                           quickSuggestions: exam.intellisenseHabilitado,
                           suggestOnTriggerCharacters: exam.intellisenseHabilitado,
                           acceptSuggestionOnEnter: exam.intellisenseHabilitado ? 'on' : 'off',
@@ -1154,6 +1155,7 @@ const ProgrammingExamView = () => {
                         placeholder={`Ejemplo:\n2\n3`}
                         value={userInput}
                         onChange={(e) => setUserInput(e.target.value)}
+                        disabled={saving || isCompiling}
                         rows="3"
                       />
                       <small className="input-hint">
@@ -1254,6 +1256,7 @@ const ProgrammingExamView = () => {
                               placeholder={`Ingresa los datos aquí...\n\nEjemplo:\n2\n3`}
                               value={userInput}
                               onChange={(e) => setUserInput(e.target.value)}
+                              disabled={saving || isCompiling}
                             />
                             <div className="mobile-input-hint">
                               <i className="fas fa-info-circle me-1"></i>

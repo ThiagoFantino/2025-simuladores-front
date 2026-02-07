@@ -241,6 +241,7 @@ export default function UserSettingsPage() {
                   onChange={handleChange}
                   className={`form-control modern-input ${nombreError ? "is-invalid" : ""}`}
                   placeholder="Ingrese su nombre completo"
+                  disabled={isSaving || isOnCooldown}
                 />
                 {nombreError && <div className="invalid-feedback">{nombreError}</div>}
               </div>
@@ -284,8 +285,7 @@ export default function UserSettingsPage() {
                   value={formData.currentPassword}
                   onChange={handleChange}
                   className="form-control modern-input"
-                  placeholder="Contraseña actual"
-                />
+                  placeholder="Contraseña actual"                  disabled={isSaving || isOnCooldown}                />
                 <small className="text-muted">Requerida solo si desea cambiar la contraseña</small>
               </div>
 
@@ -313,6 +313,7 @@ export default function UserSettingsPage() {
                   onChange={handleChange}
                   placeholder="Nueva contraseña"
                   className={`form-control modern-input ${passwordError ? "is-invalid" : ""}`}
+                  disabled={isSaving || isOnCooldown}
                 />
                 {passwordError && <div className="invalid-feedback">{passwordError}</div>}
                 <small className="text-muted">Dejar en blanco para mantener la actual</small>

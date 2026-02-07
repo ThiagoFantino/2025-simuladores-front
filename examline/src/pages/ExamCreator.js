@@ -60,7 +60,6 @@ const ExamCreator = () => {
   const [isRunningTests, setIsRunningTests] = useState(false);
   const [showTestPanel, setShowTestPanel] = useState(false);
   
-  const [error, setError] = useState("");
   const [isPublishing, setIsPublishing] = useState(false);
   const [hasDraft, setHasDraft] = useState(!!draft);
 
@@ -175,17 +174,35 @@ const ExamCreator = () => {
   // Agregar pregunta al listado
   const handleAgregarPregunta = () => {
     if (!textoPregunta.trim()) {
-      setError("Ingrese el texto de la pregunta");
+      showModal(
+        'error',
+        'Error',
+        'Ingrese el texto de la pregunta',
+        null,
+        false
+      );
       return;
     }
     
     if (opciones.length < 2) {
-      setError("La pregunta debe tener al menos 2 opciones");
+      showModal(
+        'error',
+        'Error',
+        'La pregunta debe tener al menos 2 opciones',
+        null,
+        false
+      );
       return;
     }
     
     if (opciones.some(o => !o.trim())) {
-      setError("Complete todas las opciones antes de agregar la pregunta");
+      showModal(
+        'error',
+        'Error',
+        'Complete todas las opciones antes de agregar la pregunta',
+        null,
+        false
+      );
       return;
     }
 
@@ -198,7 +215,6 @@ const ExamCreator = () => {
     setTextoPregunta("");
     setOpciones(["", ""]);
     setCorrecta(0);
-    setError("");
   };
 
   const handleEliminarPregunta = (index) => {
@@ -208,7 +224,13 @@ const ExamCreator = () => {
   // Funciones para manejar archivos de referencia
   const handleAddReferenceFile = () => {
     if (!newReferenceFileName.trim()) {
-      alert('Por favor ingresa un nombre de archivo');
+      showModal(
+        'error',
+        'Error',
+        'Por favor ingresa un nombre de archivo',
+        null,
+        false
+      );
       return;
     }
     
@@ -220,7 +242,13 @@ const ExamCreator = () => {
     }
     
     if (referenceFiles.some(f => f.filename === filename)) {
-      alert('Ya existe un archivo con ese nombre');
+      showModal(
+        'error',
+        'Error',
+        'Ya existe un archivo con ese nombre',
+        null,
+        false
+      );
       return;
     }
     
@@ -232,7 +260,13 @@ const ExamCreator = () => {
   
   const handleDeleteReferenceFile = () => {
     if (referenceFiles.length === 1) {
-      alert('Debe haber al menos un archivo');
+      showModal(
+        'error',
+        'Error',
+        'Debe haber al menos un archivo',
+        null,
+        false
+      );
       return;
     }
     
@@ -277,33 +311,46 @@ const ExamCreator = () => {
     const currentFile = referenceFiles.find(f => f.filename === currentReferenceFile);
     if (!currentFile || !currentFile.content.trim()) {
       const errorMsg = "Debes ingresar código en el archivo actual para probar";
-      setError(errorMsg);
       console.error('Validación falló:', errorMsg);
-      alert(errorMsg);
+      showModal(
+        'error',
+        'Error',
+        errorMsg,
+        null,
+        false
+      );
       return;
     }
 
     if (testCases.length === 0) {
       const errorMsg = "No hay test cases configurados";
-      setError(errorMsg);
       console.error('Validación falló:', errorMsg);
-      alert(errorMsg);
+      showModal(
+        'error',
+        'Error',
+        errorMsg,
+        null,
+        false
+      );
       return;
     }
 
     const invalidTests = testCases.filter(tc => !tc.expectedOutput || !tc.expectedOutput.trim());
     if (invalidTests.length > 0) {
       const errorMsg = `Hay ${invalidTests.length} test case(s) sin output esperado. Por favor completa todos los test cases antes de ejecutar.`;
-      setError(errorMsg);
       console.error('Validación falló:', errorMsg);
       console.error('Test cases inválidos:', invalidTests);
-      alert(errorMsg);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      showModal(
+        'error',
+        '❌ Error de Validación',
+        errorMsg,
+        null,
+        false
+      );
       return;
     }
 
     setIsRunningTests(true);
-    setError("");
     
     try {
       console.log('Llamando a testSolutionPreview...');
@@ -317,8 +364,13 @@ const ExamCreator = () => {
     } catch (err) {
       console.error("Error ejecutando tests:", err);
       const errorMsg = err.message || "Error al ejecutar tests";
-      setError(errorMsg);
-      alert(errorMsg);
+      showModal(
+        'error',
+        'Error',
+        errorMsg,
+        null,
+        false
+      );
     } finally {
       setIsRunningTests(false);
     }
@@ -357,7 +409,13 @@ const ExamCreator = () => {
       navigate("/mis-examenes");
     } catch (err) {
       console.error(err);
-      setError(err.message);
+      showModal(
+        'error',
+        '❌ Error al Publicar',
+        err.message || 'Ocurrió un error al publicar el examen',
+        null,
+        false
+      );
     } finally {
       setIsPublishing(false);
     }
@@ -368,7 +426,13 @@ const ExamCreator = () => {
     if (isPublishing) return; // Prevenir múltiples clicks
     
     if (!titulo) {
-      setError("Ingrese un título para el examen");
+      showModal(
+        'error',
+        'Error',
+        'Ingrese un título para el examen',
+        null,
+        false
+      );
       return;
     }
 
@@ -377,7 +441,7 @@ const ExamCreator = () => {
       if (preguntas.length === 0) {
         showModal(
           'warning',
-          '⚠️ No se puede publicar el examen',
+          'No se puede publicar el examen',
           'No se puede publicar un examen sin preguntas. Por favor, agrega al menos una pregunta antes de continuar.',
           null,
           false
@@ -388,7 +452,7 @@ const ExamCreator = () => {
       if (!enunciadoProgramacion.trim()) {
         showModal(
           'warning',
-          '⚠️ No se puede publicar el examen',
+          'No se puede publicar el examen',
           'No se puede publicar un examen de programación sin consigna. Por favor, ingresa el enunciado del problema antes de continuar.',
           null,
           false
@@ -425,6 +489,7 @@ const ExamCreator = () => {
                 <button
                   className="modern-btn modern-btn-danger compact-btn"
                   onClick={handleDiscardDraft}
+                  disabled={isPublishing}
                   title="Descartar borrador"
                 >
                   <i className="fas fa-trash me-2"></i>
@@ -440,12 +505,7 @@ const ExamCreator = () => {
         </div>
       </div>
 
-      {error && (
-        <div className="error-message mb-4">
-          <i className="fas fa-exclamation-triangle"></i>
-          {error}
-        </div>
-      )}
+
 
 
         {/* Información del examen */}
@@ -468,6 +528,7 @@ const ExamCreator = () => {
                 placeholder="Ingresa el título del examen"
                 value={titulo}
                 onChange={(e) => setTitulo(e.target.value)}
+                disabled={isPublishing}
                 style={{
                   padding: '0.75rem 1rem',
                   border: '1px solid var(--border-color)',
@@ -486,6 +547,7 @@ const ExamCreator = () => {
                 className="form-select"
                 value={tipoExamen}
                 onChange={(e) => setTipoExamen(e.target.value)}
+                disabled={isPublishing}
                 style={{
                   padding: '0.75rem 1rem',
                   border: '1px solid var(--border-color)',
@@ -520,6 +582,7 @@ const ExamCreator = () => {
                     className="form-select"
                     value={lenguajeProgramacion}
                     onChange={(e) => setLenguajeProgramacion(e.target.value)}
+                    disabled={isPublishing}
                     style={{
                       padding: '0.75rem 1rem',
                       border: '1px solid var(--border-color)',
@@ -544,6 +607,7 @@ const ExamCreator = () => {
                       id="intellisenseSwitch"
                       checked={intellisenseHabilitado}
                       onChange={(e) => setIntellisenseHabilitado(e.target.checked)}
+                      disabled={isPublishing}
                     />
                     <label className="form-check-label" htmlFor="intellisenseSwitch">
                       {intellisenseHabilitado ? "Habilitado" : "Deshabilitado"}
@@ -563,6 +627,7 @@ const ExamCreator = () => {
                   placeholder="Describe detalladamente el problema que deben resolver los estudiantes..."
                   value={enunciadoProgramacion}
                   onChange={(e) => setEnunciadoProgramacion(e.target.value)}
+                  disabled={isPublishing}
                   style={{
                     padding: '0.75rem 1rem',
                     border: '1px solid var(--border-color)',
@@ -584,6 +649,7 @@ const ExamCreator = () => {
                   placeholder={`Código inicial para ${lenguajeProgramacion}...`}
                   value={codigoInicial}
                   onChange={(e) => setCodigoInicial(e.target.value)}
+                  disabled={isPublishing}
                   style={{
                     padding: '0.75rem 1rem',
                     border: '1px solid var(--border-color)',
@@ -633,6 +699,7 @@ const ExamCreator = () => {
                         type="button"
                         className="btn btn-sm btn-outline-danger"
                         onClick={() => handleRemoveTestCase(index)}
+                        disabled={isPublishing}
                       >
                         <i className="fas fa-trash"></i>
                       </button>
@@ -659,6 +726,7 @@ const ExamCreator = () => {
                           placeholder="2&#10;3"
                           value={testCase.input}
                           onChange={(e) => handleTestCaseChange(index, 'input', e.target.value)}
+                          disabled={isPublishing}
                           style={{ fontFamily: 'monospace', fontSize: '0.9rem' }}
                         />
                         <small className="form-text text-muted">
@@ -674,6 +742,7 @@ const ExamCreator = () => {
                           placeholder="5"
                           value={testCase.expectedOutput}
                           onChange={(e) => handleTestCaseChange(index, 'expectedOutput', e.target.value)}
+                          disabled={isPublishing}
                           style={{ fontFamily: 'monospace', fontSize: '0.9rem' }}
                         />
                         <small className="form-text text-muted">
@@ -689,6 +758,7 @@ const ExamCreator = () => {
                 type="button"
                 className="btn btn-outline-primary"
                 onClick={handleAddTestCase}
+                disabled={isPublishing}
               >
                 <i className="fas fa-plus me-2"></i>
                 Agregar Test Case
@@ -758,7 +828,7 @@ const ExamCreator = () => {
                           {referenceFiles.map((file) => (
                             <div
                               key={file.filename}
-                              onClick={() => setCurrentReferenceFile(file.filename)}
+                              onClick={() => !isPublishing && setCurrentReferenceFile(file.filename)}
                               style={{
                                 display: 'flex',
                                 alignItems: 'center',
@@ -766,18 +836,19 @@ const ExamCreator = () => {
                                 padding: '6px 12px',
                                 backgroundColor: currentReferenceFile === file.filename ? '#1e1e1e' : 'transparent',
                                 borderRadius: '4px',
-                                cursor: 'pointer',
+                                cursor: isPublishing ? 'not-allowed' : 'pointer',
+                                opacity: isPublishing ? 0.6 : 1,
                                 fontSize: '13px',
                                 border: currentReferenceFile === file.filename ? '1px solid #3e3e42' : '1px solid transparent',
                                 transition: 'all 0.2s'
                               }}
                               onMouseEnter={(e) => {
-                                if (currentReferenceFile !== file.filename) {
+                                if (!isPublishing && currentReferenceFile !== file.filename) {
                                   e.currentTarget.style.backgroundColor = '#3e3e42';
                                 }
                               }}
                               onMouseLeave={(e) => {
-                                if (currentReferenceFile !== file.filename) {
+                                if (!isPublishing && currentReferenceFile !== file.filename) {
                                   e.currentTarget.style.backgroundColor = 'transparent';
                                 }
                               }}
@@ -793,6 +864,7 @@ const ExamCreator = () => {
                                     setReferenceFileToDelete(file.filename);
                                     setShowDeleteReferenceFileModal(true);
                                   }}
+                                  disabled={isPublishing}
                                   style={{
                                     background: 'none',
                                     border: 'none',
@@ -810,6 +882,7 @@ const ExamCreator = () => {
                           ))}
                           <button
                             onClick={() => setShowNewReferenceFileModal(true)}
+                            disabled={isPublishing}
                             style={{
                               display: 'flex',
                               alignItems: 'center',
@@ -840,7 +913,7 @@ const ExamCreator = () => {
                             e.stopPropagation();
                             handleRunTestsReference();
                           }}
-                          disabled={isRunningTests}
+                          disabled={isRunningTests || isPublishing}
                           style={{
                             display: 'flex',
                             alignItems: 'center',
@@ -872,7 +945,7 @@ const ExamCreator = () => {
                         options={{
                           selectOnLineNumbers: true,
                           roundedSelection: false,
-                          readOnly: false,
+                          readOnly: isPublishing,
                           cursorStyle: 'line',
                           automaticLayout: true,
                           scrollBeyondLastLine: false,
@@ -917,10 +990,11 @@ const ExamCreator = () => {
                           backgroundColor: saveReferenceSolution ? '#d3f9d8' : 'white',
                           borderRadius: '6px',
                           border: `2px solid ${saveReferenceSolution ? '#2f9e44' : '#dee2e6'}`,
-                          cursor: 'pointer',
+                          cursor: isPublishing ? 'not-allowed' : 'pointer',
+                          opacity: isPublishing ? 0.6 : 1,
                           transition: 'all 0.2s ease'
                         }}
-                        onClick={() => setSaveReferenceSolution(true)}
+                        onClick={() => !isPublishing && setSaveReferenceSolution(true)}
                       >
                         <input
                           className="form-check-input"
@@ -929,7 +1003,8 @@ const ExamCreator = () => {
                           id="saveReferenceYes"
                           checked={saveReferenceSolution}
                           onChange={() => setSaveReferenceSolution(true)}
-                          style={{ cursor: 'pointer' }}
+                          disabled={isPublishing}
+                          style={{ cursor: isPublishing ? 'not-allowed' : 'pointer' }}
                         />
                         <label 
                           className="form-check-label ms-2" 
@@ -963,10 +1038,11 @@ const ExamCreator = () => {
                           backgroundColor: !saveReferenceSolution ? '#ffe0e0' : 'white',
                           borderRadius: '6px',
                           border: `2px solid ${!saveReferenceSolution ? '#c92a2a' : '#dee2e6'}`,
-                          cursor: 'pointer',
+                          cursor: isPublishing ? 'not-allowed' : 'pointer',
+                          opacity: isPublishing ? 0.6 : 1,
                           transition: 'all 0.2s ease'
                         }}
-                        onClick={() => setSaveReferenceSolution(false)}
+                        onClick={() => !isPublishing && setSaveReferenceSolution(false)}
                       >
                         <input
                           className="form-check-input"
@@ -975,7 +1051,8 @@ const ExamCreator = () => {
                           id="saveReferenceNo"
                           checked={!saveReferenceSolution}
                           onChange={() => setSaveReferenceSolution(false)}
-                          style={{ cursor: 'pointer' }}
+                          disabled={isPublishing}
+                          style={{ cursor: isPublishing ? 'not-allowed' : 'pointer' }}
                         />
                         <label 
                           className="form-check-label ms-2" 
@@ -1124,6 +1201,7 @@ const ExamCreator = () => {
               placeholder="Escribe aquí tu pregunta"
               value={textoPregunta}
               onChange={(e) => setTextoPregunta(e.target.value)}
+              disabled={isPublishing}
               style={{
                 padding: '0.75rem 1rem',
                 border: '1px solid var(--border-color)',
@@ -1151,6 +1229,7 @@ const ExamCreator = () => {
                       nuevasOpciones[i] = e.target.value;
                       setOpciones(nuevasOpciones);
                     }}
+                    disabled={isPublishing}
                     style={{
                       padding: '0.6rem 0.8rem',
                       border: '1px solid var(--border-color)',
@@ -1163,6 +1242,7 @@ const ExamCreator = () => {
                       type="button"
                       className="btn btn-outline-danger btn-sm"
                       onClick={() => handleEliminarOpcion(i)}
+                      disabled={isPublishing}
                       title="Eliminar opción"
                       style={{ minWidth: '40px' }}
                     >
@@ -1177,6 +1257,7 @@ const ExamCreator = () => {
                 type="button"
                 className="btn btn-outline-primary btn-sm mt-2"
                 onClick={handleAgregarOpcion}
+                disabled={isPublishing}
               >
                 <i className="fas fa-plus me-2"></i>
                 Agregar opción
@@ -1193,6 +1274,7 @@ const ExamCreator = () => {
               className="form-select"
               value={correcta}
               onChange={(e) => setCorrecta(Number(e.target.value))}
+              disabled={isPublishing}
               style={{
                 padding: '0.75rem 1rem',
                 border: '1px solid var(--border-color)',
@@ -1212,6 +1294,7 @@ const ExamCreator = () => {
             <button 
               className="modern-btn modern-btn-secondary"
               onClick={handleAgregarPregunta}
+              disabled={isPublishing}
             >
               <i className="fas fa-plus me-2"></i>
               <span className="button-text">Agregar Pregunta</span>
@@ -1253,6 +1336,7 @@ const ExamCreator = () => {
                       <button 
                         className="btn btn-sm btn-danger"
                         onClick={() => handleEliminarPregunta(idx)}
+                        disabled={isPublishing}
                         title="Eliminar pregunta"
                       >
                         <i className="fas fa-trash"></i>
@@ -1281,7 +1365,7 @@ const ExamCreator = () => {
       )}
 
       {/* Botón de publicar examen - al final */}
-      <div className="modern-card">
+      <div className="modern-card mt-5">
         <div className="modern-card-body">
           <div className="text-center">
             <button 

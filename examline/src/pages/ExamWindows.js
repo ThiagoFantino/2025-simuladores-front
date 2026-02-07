@@ -501,7 +501,6 @@ export default function ExamWindowsPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
                 <div style={{ flex: 1 }}>
                   <h5 className="exam-title" style={{ margin: 0 }}>
-                    <i className="fas fa-tag me-2" style={{ fontSize: '0.9rem', color: 'var(--primary-color)' }}></i>
                     {window.nombre}
                     {(window.estado === 'en_curso' || (window.sinTiempo && window.estado === 'programada')) && <span className="status-pulse" />}
                   </h5>
@@ -1009,6 +1008,7 @@ export default function ExamWindowsPage() {
                           onChange={handleInputChange}
                           placeholder="Ej: Turno Mañana, Grupo A, Recuperatorio, 1er Parcial, etc."
                           required
+                          disabled={isSavingWindow}
                           style={{
                             borderRadius: '8px',
                             border: `1px solid ${validationErrors.nombre ? '#dc3545' : 'var(--border-color)'}`,
@@ -1045,7 +1045,7 @@ export default function ExamWindowsPage() {
                           value={formData.examId}
                           onChange={handleInputChange}
                           required
-                          disabled={editingWindow}
+                          disabled={editingWindow || isSavingWindow}
                           style={{
                             borderRadius: '8px',
                             border: `1px solid ${validationErrors.examId ? '#dc3545' : 'var(--border-color)'}`,
@@ -1056,7 +1056,7 @@ export default function ExamWindowsPage() {
                         >
                           <option value="">Selecciona un examen</option>
                           {exams.map(exam => (
-                            <option key={exam.id} value={exam.id}>{exam.titulo}</option>
+                            <option key={exam.id} value={exam.id}>{exam.titulo} (ID: {exam.id})</option>
                           ))}
                         </select>
                       </div>
@@ -1088,7 +1088,7 @@ export default function ExamWindowsPage() {
                                       kioskMode: useSEB ? prev.kioskMode : 0 // Desactivar kiosko si se desactiva SEB
                                     }));
                                   }}
-                                  disabled={!!editingWindow && editingWindow.estado === 'en_curso'}
+                                  disabled={isSavingWindow || (!!editingWindow && editingWindow.estado === 'en_curso')}
                                   style={{ 
                                     width: '3rem', 
                                     height: '1.5rem',
@@ -1138,7 +1138,7 @@ export default function ExamWindowsPage() {
                                     name="kioskMode"
                                     checked={formData.kioskMode ? true : false}
                                     onChange={(e) => setFormData(prev => ({ ...prev, kioskMode: e.target.checked ? 1 : 0 }))}
-                                    disabled={!!editingWindow && editingWindow.estado === 'en_curso'}
+                                    disabled={isSavingWindow || (!!editingWindow && editingWindow.estado === 'en_curso')}
                                     style={{ 
                                       width: '3rem', 
                                       height: '1.5rem',
@@ -1201,7 +1201,7 @@ export default function ExamWindowsPage() {
                                       duracion: false
                                     }));
                                   }}
-                                  disabled={!!editingWindow && (editingWindow.estado === 'en_curso' || editingWindow.estado === 'finalizada')}
+                                  disabled={isSavingWindow || (!!editingWindow && (editingWindow.estado === 'en_curso' || editingWindow.estado === 'finalizada'))}
                                   style={{ 
                                     width: '3rem', 
                                     height: '1.5rem',
@@ -1259,7 +1259,7 @@ export default function ExamWindowsPage() {
                               value={formData.fechaInicio}
                               onChange={handleInputChange}
                               required={!formData.sinTiempo}
-                              disabled={!!editingWindow && editingWindow.estado === 'en_curso'}
+                              disabled={isSavingWindow || (!!editingWindow && editingWindow.estado === 'en_curso')}
                               style={{
                                 borderRadius: '8px',
                                 border: `1px solid ${validationErrors.fechaInicio ? '#dc3545' : 'var(--border-color)'}`,
@@ -1291,6 +1291,7 @@ export default function ExamWindowsPage() {
                               min="1"
                               max="9999"
                               required={!formData.sinTiempo}
+                              disabled={isSavingWindow}
                               style={{
                                 borderRadius: '8px',
                                 border: `1px solid ${validationErrors.duracion ? '#dc3545' : 'var(--border-color)'}`,
@@ -1355,7 +1356,7 @@ export default function ExamWindowsPage() {
                               : 1}
                             max="9999"
                             required
-                            disabled={!!editingWindow && editingWindow.estado === 'en_curso'}
+                            disabled={isSavingWindow || (!!editingWindow && editingWindow.estado === 'en_curso')}
                             style={{
                               borderRadius: '8px',
                               border: `1px solid ${validationErrors.cupoMaximo ? '#dc3545' : 'var(--border-color)'}`,
@@ -1384,7 +1385,7 @@ export default function ExamWindowsPage() {
                             value={formData.modalidad}
                             onChange={handleInputChange}
                             required
-                            disabled={!!editingWindow && editingWindow.estado === 'en_curso'}
+                            disabled={isSavingWindow || (!!editingWindow && editingWindow.estado === 'en_curso')}
                             style={{
                               borderRadius: '8px',
                               border: `1px solid ${validationErrors.modalidad ? '#dc3545' : 'var(--border-color)'}`,
@@ -1427,6 +1428,7 @@ export default function ExamWindowsPage() {
                           ? "Instrucciones especiales para la ventana sin tiempo (opcional)..." 
                           : "Instrucciones adicionales para los estudiantes (opcional)..."
                         }
+                        disabled={isSavingWindow}
                         style={{
                           borderRadius: '8px',
                           border: '1px solid var(--border-color)',
@@ -1449,16 +1451,6 @@ export default function ExamWindowsPage() {
                     gap: '0.75rem',
                     justifyContent: 'flex-end'
                   }}>
-                    <button 
-                      type="button" 
-                      className="modern-btn modern-btn-secondary"
-                      onClick={() => setShowCreateModal(false)}
-                      style={{ minWidth: '120px' }}
-                      disabled={isSavingWindow}
-                    >
-                      <i className="fas fa-times me-2"></i>
-                      Cancelar
-                    </button>
                     <button 
                       type="submit" 
                       className="modern-btn modern-btn-primary"
