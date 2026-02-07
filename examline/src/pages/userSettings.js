@@ -17,6 +17,9 @@ export default function UserSettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isOnCooldown, setIsOnCooldown] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+
   const [modal, setModal] = useState({
     show: false,
     type: 'info',
@@ -260,12 +263,23 @@ export default function UserSettingsPage() {
 
               {/* Contraseña actual */}
               <div className="col-lg-6 col-md-12">
-                <label className="form-label fw-semibold">
-                  <i className="fas fa-key me-2"></i>
-                  Contraseña actual
-                </label>
+                <div className="d-flex justify-content-between align-items-center">
+                  <label className="form-label fw-semibold">
+                    <i className="fas fa-key me-2"></i>
+                    Contraseña actual
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                    className="btn btn-link p-0"
+                    style={{ fontSize: '0.85rem' }}
+                  >
+                    <i className={`fas ${showCurrentPassword ? "fa-eye-slash" : "fa-eye"} me-1`}></i>
+                    {showCurrentPassword ? "Ocultar" : "Mostrar"}
+                  </button>
+                </div>
                 <input
-                  type="password"
+                  type={showCurrentPassword ? "text" : "password"}
                   name="currentPassword"
                   value={formData.currentPassword}
                   onChange={handleChange}
@@ -277,12 +291,23 @@ export default function UserSettingsPage() {
 
               {/* Nueva contraseña */}
               <div className="col-lg-6 col-md-12">
-                <label className="form-label fw-semibold">
-                  <i className="fas fa-lock me-2"></i>
-                  Nueva contraseña
-                </label>
+                <div className="d-flex justify-content-between align-items-center">
+                  <label className="form-label fw-semibold">
+                    <i className="fas fa-lock me-2"></i>
+                    Nueva contraseña
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="btn btn-link p-0"
+                    style={{ fontSize: '0.85rem' }}
+                  >
+                    <i className={`fas ${showNewPassword ? "fa-eye-slash" : "fa-eye"} me-1`}></i>
+                    {showNewPassword ? "Ocultar" : "Mostrar"}
+                  </button>
+                </div>
                 <input
-                  type="password"
+                  type={showNewPassword ? "text" : "password"}
                   name="password"
                   value={formData.password}
                   onChange={handleChange}

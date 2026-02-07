@@ -375,6 +375,14 @@ export default function ExamWindowsPage() {
 
   const handleToggleActive = async (windowId, currentActive) => {
     const action = currentActive ? 'desactivar' : 'activar';
+    
+    // Actualización optimista: actualiza UI inmediatamente
+    setExamWindows(prev => prev.map(window => 
+      window.id === windowId 
+        ? { ...window, activa: !currentActive }
+        : window
+    ));
+    
     try {
       const response = await fetch(`${API_BASE_URL}/exam-windows/${windowId}/toggle-active`, {
         method: 'PATCH',
@@ -386,17 +394,29 @@ export default function ExamWindowsPage() {
 
       if (response.ok) {
         const result = await response.json();
+        // Confirma el cambio con los datos del servidor
         setExamWindows(prev => prev.map(window => 
           window.id === windowId 
             ? { ...window, activa: result.window.activa }
             : window
         ));
-        loadData();
       } else {
+        // Revierte el cambio optimista si falla
+        setExamWindows(prev => prev.map(window => 
+          window.id === windowId 
+            ? { ...window, activa: currentActive }
+            : window
+        ));
         const errorData = await response.json();
         showModal('error', 'Error', errorData.error || `Error al ${action} la ventana`);
       }
     } catch (error) {
+      // Revierte el cambio optimista si hay error
+      setExamWindows(prev => prev.map(window => 
+        window.id === windowId 
+          ? { ...window, activa: currentActive }
+          : window
+      ));
       console.error(`Error ${action}ndo ventana:`, error);
       showModal('error', 'Error', 'Error de conexión');
     }
@@ -457,7 +477,9 @@ export default function ExamWindowsPage() {
             b: 'rgba(148, 163, 184, 0.18)'
           }
         };
-        const st = statusStyles[window.estado] || statusStyles.programada;
+        // Las ventanas eternas en estado 'programada' se muestran como 'en_curso'
+        const effectiveState = (window.sinTiempo && window.estado === 'programada') ? 'en_curso' : window.estado;
+        const st = statusStyles[effectiveState] || statusStyles.programada;
         return (
           <div 
             className={`exam-card fade-in-up w-100`} 
@@ -481,7 +503,7 @@ export default function ExamWindowsPage() {
                   <h5 className="exam-title" style={{ margin: 0 }}>
                     <i className="fas fa-tag me-2" style={{ fontSize: '0.9rem', color: 'var(--primary-color)' }}></i>
                     {window.nombre}
-                    {window.estado === 'en_curso' && <span className="status-pulse" />}
+                    {(window.estado === 'en_curso' || (window.sinTiempo && window.estado === 'programada')) && <span className="status-pulse" />}
                   </h5>
                   <div style={{ 
                     fontSize: '0.85rem', 
@@ -494,7 +516,7 @@ export default function ExamWindowsPage() {
                   </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
-                  {getStatusBadge(window.estado)}
+                  {getStatusBadge(window.sinTiempo && window.estado === 'programada' ? 'en_curso' : window.estado)}
                   <div 
                     className="form-check form-switch"
                     style={{ 
@@ -544,12 +566,6 @@ export default function ExamWindowsPage() {
               </div>
             </div>
             <div className="exam-card-body" style={{ flex: '1', display: 'flex', flexDirection: 'column' }}>
-              {!window.activa && (
-                <div className="alert alert-warning py-2 mb-3" style={{ fontSize: '0.85rem' }}>
-                  <i className="fas fa-eye-slash me-2"></i>
-                  <strong>Ventana oculta:</strong> Los estudiantes no pueden ver esta ventana ni inscribirse.
-                </div>
-              )}
               <div className="exam-info" style={{ flex: '1' }}>
                 {window.sinTiempo ? (
                   <div className="exam-info-item">
@@ -925,8 +941,7 @@ export default function ExamWindowsPage() {
 
       {showCreateModal && (
         <div 
-          className="modal-backdrop-fade" 
-          onClick={() => setShowCreateModal(false)}
+          className="modal-backdrop-fade"
         >
           <div className="modal show" style={{ display: 'block' }}>
             <div 

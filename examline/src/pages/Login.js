@@ -8,6 +8,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false); // 🔹 agregado
   const [validated, setValidated] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -49,7 +50,6 @@ const Login = () => {
     }
   };
 
-  // 🔹 Si está en SEB → mostrar solo el botón
   if (isSEB) {
     return (
       <div
@@ -84,7 +84,6 @@ const Login = () => {
     );
   }
 
-  // 🔹 Si NO está en SEB → mostrar el login normal
   return (
     <div
       className="d-flex align-items-center justify-content-center min-vh-100 py-3"
@@ -120,6 +119,7 @@ const Login = () => {
             className={validated ? "was-validated" : ""}
             onSubmit={handleSubmit}
           >
+            {/* Email */}
             <div className="mb-4 text-start">
               <label
                 htmlFor="email"
@@ -146,16 +146,32 @@ const Login = () => {
               <div className="invalid-feedback">Ingrese un email válido</div>
             </div>
 
-            <div className="mb-4 text-start">
-              <label
-                htmlFor="password"
-                className="form-label d-flex align-items-center gap-2"
-              >
-                <i className="fas fa-lock text-muted"></i>
-                Contraseña
-              </label>
+            {/* Contraseña con toggle arriba a la derecha */}
+            <div className="mb-4 text-start d-flex flex-column">
+              <div className="d-flex justify-content-between align-items-center mb-1">
+                <label
+                  htmlFor="password"
+                  className="form-label d-flex align-items-center gap-2 mb-0"
+                >
+                  <i className="fas fa-lock text-muted"></i>
+                  Contraseña
+                </label>
+
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="btn btn-link p-0"
+                  style={{ fontSize: "0.9rem" }}
+                >
+                  <i
+                    className={`fas ${showPassword ? "fa-eye-slash" : "fa-eye"} me-1`}
+                  ></i>
+                  {showPassword ? "Ocultar" : "Mostrar"}
+                </button>
+              </div>
+
               <input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 className="form-control"
                 id="password"
                 required
@@ -172,6 +188,7 @@ const Login = () => {
               <div className="invalid-feedback">Ingrese su contraseña</div>
             </div>
 
+            {/* Botón de login */}
             <div className="d-grid mb-4">
               <button
                 type="submit"
@@ -226,4 +243,5 @@ const Login = () => {
 };
 
 export default Login;
+
 

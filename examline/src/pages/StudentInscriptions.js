@@ -73,14 +73,15 @@ export default function StudentInscriptionsPage({
                 return {
                   ...inscription,
                   hasCompletedAttempt: attemptData.hasAttempt && attemptData.attempt?.estado === 'finalizado',
-                  attemptId: attemptData.hasAttempt ? attemptData.attempt?.id : null
+                  attemptId: attemptData.hasAttempt ? attemptData.attempt?.id : null,
+                  attempt: attemptData.hasAttempt ? attemptData.attempt : null
                 };
               }
             } catch (error) {
               console.error('Error checking attempt for inscription:', inscription.id);
             }
             
-            return { ...inscription, hasCompletedAttempt: false, attemptId: null };
+            return { ...inscription, hasCompletedAttempt: false, attemptId: null, attempt: null };
           })
         );
         
@@ -532,18 +533,8 @@ const openExam = async (examId, windowId, token, window) => {
                     <div className={`exam-card fade-in-up`} style={{animationDelay: `${index * 0.1}s`}}>
                       <div className="exam-card-header">
                         <h5 className="exam-title">
-                          <i className="fas fa-tag me-2" style={{ fontSize: '0.9rem' }}></i>
                           {window.nombre}
                         </h5>
-                        <div style={{ 
-                          fontSize: '0.85rem', 
-                          color: '#6c757d', 
-                          marginTop: '0.35rem',
-                          fontWeight: '500'
-                        }}>
-                          <i className="fas fa-file-alt me-1" style={{ fontSize: '0.75rem' }}></i>
-                          {window.exam.titulo}
-                        </div>
                         <span className="exam-badge">
                           Prof. {window.exam.profesor.nombre}
                         </span>
@@ -690,18 +681,8 @@ const openExam = async (examId, windowId, token, window) => {
                         <div className="d-flex justify-content-between align-items-start">
                           <div>
                             <h5 className="exam-title">
-                              <i className="fas fa-tag me-2" style={{ fontSize: '0.9rem' }}></i>
                               {window.nombre}
                             </h5>
-                            <div style={{ 
-                              fontSize: '0.85rem', 
-                              color: '#6c757d', 
-                              marginTop: '0.35rem',
-                              fontWeight: '500'
-                            }}>
-                              <i className="fas fa-file-alt me-1" style={{ fontSize: '0.75rem' }}></i>
-                              {window.exam.titulo}
-                            </div>
                             <span className="exam-badge">
                               Prof. {window.exam.profesor.nombre}
                             </span>
@@ -755,25 +736,21 @@ const openExam = async (examId, windowId, token, window) => {
                                 <i className="fas fa-check-circle me-2"></i>
                                 Examen Completado
                               </button>
-                              <button 
-                                className="modern-btn modern-btn-primary"
-                                onClick={() => navigate(`/exam-results/${inscription.attemptId}`)}
-                              >
-                                <i className="fas fa-chart-bar me-2"></i>
-                                Ver Resultados
-                              </button>
-                              <button 
-                                className="modern-btn modern-btn-secondary"
-                                onClick={() => navigate(`/ranking/window/${window.id}`)}
-                                style={{
-                                  background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                                  color: 'white',
-                                  border: 'none'
-                                }}
-                              >
-                                <i className="fas fa-trophy me-2"></i>
-                                Ver Ranking
-                              </button>
+                              {inscription.examWindow?.notasPublicadas && 
+                               inscription.attempt?.calificacionManual !== null && 
+                               inscription.attempt?.calificacionManual !== undefined && (
+                                <div className="alert alert-info d-flex align-items-center justify-content-center" style={{
+                                  fontSize: '1.1rem',
+                                  fontWeight: 'bold',
+                                  border: '2px solid #0dcaf0',
+                                  backgroundColor: '#cff4fc',
+                                  borderRadius: '8px',
+                                  margin: '0'
+                                }}>
+                                  <i className="fas fa-graduation-cap me-2" style={{ fontSize: '1.3rem' }}></i>
+                                  <span>Nota: {inscription.attempt.calificacionManual.toFixed(2)}</span>
+                                </div>
+                              )}
                             </div>
                           ) : canTake ? (
                             <div className="d-grid gap-2">

@@ -201,6 +201,10 @@ const ExamCreator = () => {
     setError("");
   };
 
+  const handleEliminarPregunta = (index) => {
+    setPreguntas(preguntas.filter((_, idx) => idx !== index));
+  };
+
   // Funciones para manejar archivos de referencia
   const handleAddReferenceFile = () => {
     if (!newReferenceFileName.trim()) {
@@ -1246,6 +1250,13 @@ const ExamCreator = () => {
                       <h5 className="exam-title">
                         <span className="question-number">Pregunta {idx + 1}</span>
                       </h5>
+                      <button 
+                        className="btn btn-sm btn-danger"
+                        onClick={() => handleEliminarPregunta(idx)}
+                        title="Eliminar pregunta"
+                      >
+                        <i className="fas fa-trash"></i>
+                      </button>
                     </div>
                     <div className="exam-card-body">
                       <div className="question-text mb-3">
