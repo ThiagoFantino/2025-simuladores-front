@@ -21,6 +21,7 @@ export default function StudentInscriptionsPage({
   const [isFiltering, setIsFiltering] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [isOnFilterCooldown, setIsOnFilterCooldown] = useState(false);
+  const [filteredAvailableWindows, setFilteredAvailableWindows] = useState([]);
   const [activeTab, setActiveTab] = useState(() => {
     // Recuperar la pestaña del localStorage o usar 'available' por defecto
     return localStorage.getItem('studentInscriptions_activeTab') || 'available';
@@ -28,28 +29,63 @@ export default function StudentInscriptionsPage({
   const [filters, setFilters] = useState({
     materia: '',
     profesor: '',
-    fecha: ''
+    fecha: '',
+    windowId: ''
   });
+  const [myInscriptionsFilters, setMyInscriptionsFilters] = useState({
+    materia: '',
+    profesor: '',
+    fecha: '',
+    windowId: ''
+  });
+  const [filteredInscriptions, setFilteredInscriptions] = useState([]);
 
-  const loadAvailableWindows = useCallback(async (searchFilters = {}) => {
+  const loadAvailableWindows = useCallback(async () => {
     try {
-      const queryParams = new URLSearchParams();
-      if (searchFilters.materia) queryParams.append('materia', searchFilters.materia);
-      if (searchFilters.profesor) queryParams.append('profesor', searchFilters.profesor);
-      if (searchFilters.fecha) queryParams.append('fecha', searchFilters.fecha);
-
-      const response = await fetch(`${API_BASE_URL}/exam-windows/disponibles?${queryParams}`, {
+      const response = await fetch(`${API_BASE_URL}/exam-windows/disponibles`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
       if (response.ok) {
         const data = await response.json();
         setAvailableWindows(data);
+        setFilteredAvailableWindows(data);
       }
     } catch (error) {
       console.error('Error cargando ventanas disponibles:', error);
     }
   }, [token]);
+
+  const filterAvailableWindows = useCallback(() => {
+    let filtered = [...availableWindows];
+
+    if (filters.materia) {
+      filtered = filtered.filter(window =>
+        window.nombre.toLowerCase().includes(filters.materia.toLowerCase())
+      );
+    }
+
+    if (filters.profesor) {
+      filtered = filtered.filter(window =>
+        window.exam.profesor.nombre.toLowerCase().includes(filters.profesor.toLowerCase())
+      );
+    }
+
+    if (filters.fecha) {
+      filtered = filtered.filter(window => {
+        const windowDate = new Date(window.fechaInicio).toISOString().split('T')[0];
+        return windowDate === filters.fecha;
+      });
+    }
+
+    if (filters.windowId) {
+      filtered = filtered.filter(window =>
+        window.id.toString().includes(filters.windowId)
+      );
+    }
+
+    setFilteredAvailableWindows(filtered);
+  }, [availableWindows, filters]);
 
   const loadMyInscriptions = useCallback(async () => {
     try {
@@ -86,16 +122,48 @@ export default function StudentInscriptionsPage({
         );
         
         setMyInscriptions(inscriptionsWithAttempts);
+        setFilteredInscriptions(inscriptionsWithAttempts);
       }
     } catch (error) {
       console.error('Error cargando mis inscripciones:', error);
     }
   }, [token]);
 
+  const filterMyInscriptions = useCallback(() => {
+    let filtered = [...myInscriptions];
+
+    if (myInscriptionsFilters.materia) {
+      filtered = filtered.filter(inscription =>
+        inscription.examWindow.nombre.toLowerCase().includes(myInscriptionsFilters.materia.toLowerCase())
+      );
+    }
+
+    if (myInscriptionsFilters.profesor) {
+      filtered = filtered.filter(inscription =>
+        inscription.examWindow.exam.profesor.nombre.toLowerCase().includes(myInscriptionsFilters.profesor.toLowerCase())
+      );
+    }
+
+    if (myInscriptionsFilters.fecha) {
+      filtered = filtered.filter(inscription => {
+        const inscriptionDate = new Date(inscription.examWindow.fechaInicio).toISOString().split('T')[0];
+        return inscriptionDate === myInscriptionsFilters.fecha;
+      });
+    }
+
+    if (myInscriptionsFilters.windowId) {
+      filtered = filtered.filter(inscription =>
+        inscription.examWindow.id.toString().includes(myInscriptionsFilters.windowId)
+      );
+    }
+
+    setFilteredInscriptions(filtered);
+  }, [myInscriptions, myInscriptionsFilters]);
+
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
-      await Promise.all([loadAvailableWindows({}), loadMyInscriptions()]);
+      await Promise.all([loadAvailableWindows(), loadMyInscriptions()]);
     } catch (error) {
       console.error('Error cargando datos:', error);
       showModal('error', 'Error', 'Error cargando los datos');
@@ -108,6 +176,23 @@ export default function StudentInscriptionsPage({
   useEffect(() => {
     localStorage.setItem('studentInscriptions_activeTab', activeTab);
   }, [activeTab]);
+
+  // Actualizar ventanas filtradas cuando cambian las ventanas disponibles
+  useEffect(() => {
+    if (availableWindows.length > 0 && filteredAvailableWindows.length === 0 && 
+        !filters.materia && !filters.profesor && !filters.fecha && !filters.windowId) {
+      setFilteredAvailableWindows(availableWindows);
+    }
+  }, [availableWindows, filteredAvailableWindows.length, filters]);
+
+  // Actualizar inscripciones filtradas cuando cambian las inscripciones
+  useEffect(() => {
+    if (myInscriptions.length > 0 && filteredInscriptions.length === 0 && 
+        !myInscriptionsFilters.materia && !myInscriptionsFilters.profesor && 
+        !myInscriptionsFilters.fecha && !myInscriptionsFilters.windowId) {
+      setFilteredInscriptions(myInscriptions);
+    }
+  }, [myInscriptions, filteredInscriptions.length, myInscriptionsFilters]);
 
   // Guardar la posición de scroll
   useEffect(() => {
@@ -215,32 +300,59 @@ const openExam = async (examId, windowId, token, window) => {
     setFilters(prev => ({ ...prev, [name]: value }));
   };
 
-  const applyFilters = async () => {
+  const applyFilters = () => {
     if (isFiltering || isOnFilterCooldown) return;
     
     setIsFiltering(true);
-    try {
-      await loadAvailableWindows(filters);
-    } finally {
+    filterAvailableWindows();
+    setTimeout(() => {
       setIsFiltering(false);
       setIsOnFilterCooldown(true);
       setTimeout(() => setIsOnFilterCooldown(false), 800);
-    }
+    }, 100);
   };
 
-  const clearFilters = async () => {
+  const clearFilters = () => {
     if (isClearing || isOnFilterCooldown) return;
     
     setIsClearing(true);
-    setFilters({ materia: '', profesor: '', fecha: '' });
-    try {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      await loadAvailableWindows({});
-    } finally {
+    setFilters({ materia: '', profesor: '', fecha: '', windowId: '' });
+    setFilteredAvailableWindows(availableWindows);
+    setTimeout(() => {
       setIsClearing(false);
       setIsOnFilterCooldown(true);
       setTimeout(() => setIsOnFilterCooldown(false), 800);
-    }
+    }, 100);
+  };
+
+  const handleMyInscriptionsFilterChange = (e) => {
+    const { name, value } = e.target;
+    setMyInscriptionsFilters(prev => ({ ...prev, [name]: value }));
+  };
+
+  const applyMyInscriptionsFilters = () => {
+    if (isFiltering || isOnFilterCooldown) return;
+    
+    setIsFiltering(true);
+    filterMyInscriptions();
+    setTimeout(() => {
+      setIsFiltering(false);
+      setIsOnFilterCooldown(true);
+      setTimeout(() => setIsOnFilterCooldown(false), 800);
+    }, 100);
+  };
+
+  const clearMyInscriptionsFilters = () => {
+    if (isClearing || isOnFilterCooldown) return;
+    
+    setIsClearing(true);
+    setMyInscriptionsFilters({ materia: '', profesor: '', fecha: '', windowId: '' });
+    setFilteredInscriptions(myInscriptions);
+    setTimeout(() => {
+      setIsClearing(false);
+      setIsOnFilterCooldown(true);
+      setTimeout(() => setIsOnFilterCooldown(false), 800);
+    }, 100);
   };
 
   const handleInscription = (window) => {
@@ -431,7 +543,7 @@ const openExam = async (examId, windowId, token, window) => {
             </div>
             <div className="modern-card-body">
               <div className="row g-3">
-                <div className="col-lg-3 col-md-6">
+                <div className="col-lg-2 col-md-6">
                   <label className="form-label fw-semibold">Nombre</label>
                   <input 
                     type="text" 
@@ -439,10 +551,10 @@ const openExam = async (examId, windowId, token, window) => {
                     name="materia"
                     value={filters.materia}
                     onChange={handleFilterChange}
-                    placeholder="Buscar por nombre de ventana"
+                    placeholder="Buscar por nombre"
                   />
                 </div>
-                <div className="col-lg-3 col-md-6">
+                <div className="col-lg-2 col-md-6">
                   <label className="form-label fw-semibold">Profesor</label>
                   <input 
                     type="text" 
@@ -453,7 +565,7 @@ const openExam = async (examId, windowId, token, window) => {
                     placeholder="Buscar por profesor"
                   />
                 </div>
-                <div className="col-lg-3 col-md-6">
+                <div className="col-lg-2 col-md-6">
                   <label className="form-label fw-semibold">Fecha</label>
                   <input 
                     type="date" 
@@ -463,7 +575,18 @@ const openExam = async (examId, windowId, token, window) => {
                     onChange={handleFilterChange}
                   />
                 </div>
-                <div className="col-lg-3 col-md-6 d-flex align-items-end gap-2 student-filters-actions">
+                <div className="col-lg-2 col-md-6">
+                  <label className="form-label fw-semibold">ID Ventana</label>
+                  <input 
+                    type="text" 
+                    className="form-control modern-input"
+                    name="windowId"
+                    value={filters.windowId}
+                    onChange={handleFilterChange}
+                    placeholder="Buscar por ID"
+                  />
+                </div>
+                <div className="col-lg-4 col-md-12 d-flex align-items-end gap-2 student-filters-actions">
                   <button 
                     className="modern-btn modern-btn-primary flex-fill"
                     onClick={applyFilters}
@@ -524,9 +647,27 @@ const openExam = async (examId, windowId, token, window) => {
                 No hay exámenes disponibles para inscripción en este momento.
               </p>
             </div>
+          ) : filteredAvailableWindows.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-icon">
+                <i className="fas fa-search"></i>
+              </div>
+              <h4 className="empty-title">No se encontraron exámenes</h4>
+              <p className="empty-subtitle">
+                No hay exámenes que coincidan con los filtros aplicados.
+              </p>
+              <button 
+                className="modern-btn modern-btn-primary"
+                onClick={clearFilters}
+                disabled={isClearing || isOnFilterCooldown}
+              >
+                <i className="fas fa-times me-2"></i>
+                Limpiar filtros
+              </button>
+            </div>
           ) : (
             <div className="row g-4">
-              {availableWindows.map((window, index) => {
+              {filteredAvailableWindows.map((window, index) => {
                 const timeStatus = getTimeStatus(window.fechaInicio, window.duracion, window.sinTiempo);
                 return (
                   <div key={window.id} className="col-md-6 col-lg-4">
@@ -535,9 +676,14 @@ const openExam = async (examId, windowId, token, window) => {
                         <h5 className="exam-title">
                           {window.nombre}
                         </h5>
-                        <span className="exam-badge">
-                          Prof. {window.exam.profesor.nombre}
-                        </span>
+                        <div className="d-flex flex-wrap gap-2">
+                          <span className="exam-badge">
+                            Prof. {window.exam.profesor.nombre}
+                          </span>
+                          <span className="exam-badge" style={{backgroundColor: '#6c757d'}}>
+                            ID: {window.id}
+                          </span>
+                        </div>
                       </div>
                       <div className="exam-card-body">
                         <div className="exam-info">
@@ -650,6 +796,109 @@ const openExam = async (examId, windowId, token, window) => {
 
       {activeTab === 'myInscriptions' && (
         <div>
+          {/* Filtros para Mis Inscripciones */}
+          <div className="modern-card mb-4">
+            <div className="modern-card-header">
+              <h5 className="modern-card-title">
+                <i className="fas fa-filter me-2"></i>
+                Filtros de Búsqueda
+              </h5>
+            </div>
+            <div className="modern-card-body">
+              <div className="row g-3">
+                <div className="col-lg-2 col-md-6">
+                  <label className="form-label fw-semibold">Nombre</label>
+                  <input 
+                    type="text" 
+                    className="form-control modern-input"
+                    name="materia"
+                    value={myInscriptionsFilters.materia}
+                    onChange={handleMyInscriptionsFilterChange}
+                    placeholder="Buscar por nombre"
+                  />
+                </div>
+                <div className="col-lg-2 col-md-6">
+                  <label className="form-label fw-semibold">Profesor</label>
+                  <input 
+                    type="text" 
+                    className="form-control modern-input"
+                    name="profesor"
+                    value={myInscriptionsFilters.profesor}
+                    onChange={handleMyInscriptionsFilterChange}
+                    placeholder="Buscar por profesor"
+                  />
+                </div>
+                <div className="col-lg-2 col-md-6">
+                  <label className="form-label fw-semibold">Fecha</label>
+                  <input 
+                    type="date" 
+                    className="form-control modern-input"
+                    name="fecha"
+                    value={myInscriptionsFilters.fecha}
+                    onChange={handleMyInscriptionsFilterChange}
+                  />
+                </div>
+                <div className="col-lg-2 col-md-6">
+                  <label className="form-label fw-semibold">ID Ventana</label>
+                  <input 
+                    type="text" 
+                    className="form-control modern-input"
+                    name="windowId"
+                    value={myInscriptionsFilters.windowId}
+                    onChange={handleMyInscriptionsFilterChange}
+                    placeholder="Buscar por ID"
+                  />
+                </div>
+                <div className="col-lg-4 col-md-12 d-flex align-items-end gap-2 student-filters-actions">
+                  <button 
+                    className="modern-btn modern-btn-primary flex-fill"
+                    onClick={applyMyInscriptionsFilters}
+                    disabled={isFiltering || isClearing || isOnFilterCooldown}
+                  >
+                    {isFiltering ? (
+                      <>
+                        <div className="modern-spinner" style={{ width: "12px", height: "12px", marginRight: "0.5rem" }}></div>
+                        <span className="btn-text">Filtrando...</span>
+                      </>
+                    ) : isOnFilterCooldown ? (
+                      <>
+                        <i className="fas fa-clock me-2"></i>
+                        <span className="btn-text">Espera...</span>
+                      </>
+                    ) : (
+                      <>
+                        <i className="fas fa-search me-2"></i>
+                        <span className="btn-text">Filtrar</span>
+                      </>
+                    )}
+                  </button>
+                  <button 
+                    className="modern-btn modern-btn-secondary flex-fill"
+                    onClick={clearMyInscriptionsFilters}
+                    disabled={isFiltering || isClearing || isOnFilterCooldown}
+                  >
+                    {isClearing ? (
+                      <>
+                        <div className="modern-spinner" style={{ width: "12px", height: "12px", marginRight: "0.5rem" }}></div>
+                        <span className="btn-text">Limpiando...</span>
+                      </>
+                    ) : isOnFilterCooldown ? (
+                      <>
+                        <i className="fas fa-clock me-2"></i>
+                        <span className="btn-text">Espera...</span>
+                      </>
+                    ) : (
+                      <>
+                        <i className="fas fa-times me-2"></i>
+                        <span className="btn-text">Limpiar</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
           {myInscriptions.length === 0 ? (
             <div className="empty-state">
               <div className="empty-icon">
@@ -667,9 +916,27 @@ const openExam = async (examId, windowId, token, window) => {
                 Ver exámenes disponibles
               </button>
             </div>
+          ) : filteredInscriptions.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-icon">
+                <i className="fas fa-search"></i>
+              </div>
+              <h4 className="empty-title">No se encontraron inscripciones</h4>
+              <p className="empty-subtitle">
+                No hay inscripciones que coincidan con los filtros aplicados.
+              </p>
+              <button 
+                className="modern-btn modern-btn-primary"
+                onClick={clearMyInscriptionsFilters}
+                disabled={isClearing || isOnFilterCooldown}
+              >
+                <i className="fas fa-times me-2"></i>
+                Limpiar filtros
+              </button>
+            </div>
           ) : (
             <div className="row g-4">
-              {myInscriptions.map((inscription, index) => {
+              {filteredInscriptions.map((inscription, index) => {
                 const window = inscription.examWindow;
                 const timeStatus = getTimeStatus(window.fechaInicio, window.duracion, window.sinTiempo);
                 const canTake = canTakeExam(inscription);
@@ -683,9 +950,14 @@ const openExam = async (examId, windowId, token, window) => {
                             <h5 className="exam-title">
                               {window.nombre}
                             </h5>
-                            <span className="exam-badge">
-                              Prof. {window.exam.profesor.nombre}
-                            </span>
+                            <div className="d-flex flex-wrap gap-2">
+                              <span className="exam-badge">
+                                Prof. {window.exam.profesor.nombre}
+                              </span>
+                              <span className="exam-badge" style={{backgroundColor: '#6c757d'}}>
+                                ID: {window.id}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>
