@@ -477,7 +477,9 @@ export default function ExamWindowsPage() {
             b: 'rgba(148, 163, 184, 0.18)'
           }
         };
-        const st = statusStyles[window.estado] || statusStyles.programada;
+        // Las ventanas eternas en estado 'programada' se muestran como 'en_curso'
+        const effectiveState = (window.sinTiempo && window.estado === 'programada') ? 'en_curso' : window.estado;
+        const st = statusStyles[effectiveState] || statusStyles.programada;
         return (
           <div 
             className={`exam-card fade-in-up w-100`} 
@@ -501,7 +503,7 @@ export default function ExamWindowsPage() {
                   <h5 className="exam-title" style={{ margin: 0 }}>
                     <i className="fas fa-tag me-2" style={{ fontSize: '0.9rem', color: 'var(--primary-color)' }}></i>
                     {window.nombre}
-                    {window.estado === 'en_curso' && <span className="status-pulse" />}
+                    {(window.estado === 'en_curso' || (window.sinTiempo && window.estado === 'programada')) && <span className="status-pulse" />}
                   </h5>
                   <div style={{ 
                     fontSize: '0.85rem', 
@@ -514,7 +516,7 @@ export default function ExamWindowsPage() {
                   </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
-                  {getStatusBadge(window.estado)}
+                  {getStatusBadge(window.sinTiempo && window.estado === 'programada' ? 'en_curso' : window.estado)}
                   <div 
                     className="form-check form-switch"
                     style={{ 
