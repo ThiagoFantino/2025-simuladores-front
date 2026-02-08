@@ -120,7 +120,7 @@ function App() {
               <UserSettingsPage />
             </AuthenticatedRoute>
           } />
-          <Route path="*" element={<Login />} /> {/* default */}
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </Router>
     </AuthProvider>
