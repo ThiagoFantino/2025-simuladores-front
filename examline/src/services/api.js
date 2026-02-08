@@ -203,19 +203,6 @@ export async function getExamById(examId, windowId = null) {
   }
 }
 
-export async function getExamHistory(userId) {
-  try {
-    const res = await fetch(`${API_BASE_URL}/exams/history/${userId}`, {
-      method: "GET",
-      headers: getAuthHeaders(),
-    });
-
-    return await handleResponse(res);
-  } catch (err) {
-    throw err;
-  }
-}
-
 // Moodle Integration endpoints
 export async function verifyMoodleConnection({ moodleUrl, moodleToken }) {
   try {
