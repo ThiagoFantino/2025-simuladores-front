@@ -45,10 +45,19 @@ const ExamAttempt = ({ examId: propExamId, onBack }) => {
     }
 
     const token = localStorage.getItem('token');
-    if (token && !propExamId) {
+    if (token) {
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
-        if (payload.rol === 'student' && !windowId && !tokenFromUrl) {
+        
+        // SIEMPRE bloquear a profesores - no pueden tomar exámenes
+        if (payload.rol === 'professor' || payload.rol === 'system') {
+          setError('Acceso no autorizado: Los profesores no pueden tomar exámenes');
+          setLoading(false);
+          return;
+        }
+        
+        // Bloquear a estudiantes sin windowId válido (solo si no es propExamId)
+        if (payload.rol === 'student' && !windowId && !tokenFromUrl && !propExamId) {
           setError('Acceso no autorizado: Debes acceder desde tus inscripciones');
           setLoading(false);
           return;
@@ -243,6 +252,22 @@ const ExamAttempt = ({ examId: propExamId, onBack }) => {
         setLoading(true);
         const token = localStorage.getItem('token');
 
+        // 🔒 Validación de seguridad - SIEMPRE bloquear profesores
+        if (token) {
+          try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            
+            // SIEMPRE bloquear a profesores - no pueden tomar exámenes
+            if (payload.rol === 'professor' || payload.rol === 'system') {
+              setError('Acceso no autorizado: Los profesores no pueden tomar exámenes');
+              setLoading(false);
+              return;
+            }
+          } catch (err) {
+            console.error('Error validando token:', err);
+          }
+        }
+
         // Primero verificar si ya existe un intento
         const checkResponse = await fetch(`${API_BASE_URL}/exam-attempts/check/${examId}?windowId=${windowId || ''}`, {
           headers: { 'Authorization': `Bearer ${token}` }
@@ -291,12 +316,13 @@ const ExamAttempt = ({ examId: propExamId, onBack }) => {
             setError('Ya has completado este examen');
             return;
           }
+          
+          // Solo limpiar error si todo salió bien
+          setError(null);
         } else {
           const errorData = await attemptResponse.json();
           setError(errorData.error || 'Error creando intento de examen');
         }
-
-        setError(null);
       } catch (err) {
         console.error('Error cargando examen:', err);
         setExam(null);

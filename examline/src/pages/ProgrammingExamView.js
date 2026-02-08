@@ -153,6 +153,22 @@ const ProgrammingExamView = () => {
     try {
       const token = localStorage.getItem('token');
       
+      // 🔒 Validación de seguridad - SIEMPRE bloquear profesores
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          
+          // SIEMPRE bloquear a profesores - no pueden tomar exámenes
+          if (payload.rol === 'professor' || payload.rol === 'system') {
+            setError('Acceso no autorizado: Los profesores no pueden tomar exámenes');
+            setLoading(false);
+            return;
+          }
+        } catch (err) {
+          console.error('Error validando token:', err);
+        }
+      }
+      
       // Verificar si ya existe un intento
       const checkResponse = await fetch(`${API_BASE_URL}/exam-attempts/check/${examId}?windowId=${windowId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -406,6 +422,33 @@ const ProgrammingExamView = () => {
 
   // Efecto para cargar datos iniciales
   useEffect(() => {
+    // 🔒 Validación de seguridad - SIEMPRE bloquear profesores
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        
+        // SIEMPRE bloquear a profesores y system - no pueden tomar exámenes
+        if (payload.rol === 'professor' || payload.rol === 'system') {
+          setError('Acceso no autorizado: Los profesores no pueden tomar exámenes');
+          setLoading(false);
+          return;
+        }
+        
+        // Bloquear a estudiantes sin windowId válido
+        if (payload.rol === 'student' && !windowId) {
+          setError('Acceso no autorizado: Debes acceder desde tus inscripciones');
+          setLoading(false);
+          return;
+        }
+      } catch (err) {
+        console.error('Error validando token:', err);
+        setError('Token inválido');
+        setLoading(false);
+        return;
+      }
+    }
+    
     const loadData = async () => {
       setLoading(true);
       await fetchExam();
@@ -414,7 +457,7 @@ const ProgrammingExamView = () => {
     };
     
     loadData();
-  }, [fetchExam, fetchOrCreateAttempt]);
+  }, [fetchExam, fetchOrCreateAttempt, windowId]);
 
   // Efecto para cargar archivos cuando el examen esté listo
   useEffect(() => {
