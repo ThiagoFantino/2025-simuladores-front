@@ -60,9 +60,18 @@ const ProgrammingExamView = () => {
   // 🔄 Estado para alternar entre vista de entrada/salida en móviles
   const [mobileTerminalView, setMobileTerminalView] = useState('output'); // 'input' | 'output'
 
-  // Obtener windowId de la URL
+  // Obtener windowId de la URL o del sessionStorage
   const searchParams = new URLSearchParams(location.search);
-  const windowId = searchParams.get('windowId');
+  const windowIdFromUrl = searchParams.get('windowId');
+  const examKey = `exam_${examId}_windowId`;
+  
+  // Si hay windowId en la URL, guardarlo en sessionStorage
+  if (windowIdFromUrl) {
+    sessionStorage.setItem(examKey, windowIdFromUrl);
+  }
+  
+  // Usar windowId de la URL o recuperarlo de sessionStorage
+  const windowId = windowIdFromUrl || sessionStorage.getItem(examKey);
 
   // 🔒 Función para obtener el nombre del archivo principal según el lenguaje
   const getMainFileName = useCallback(() => {
@@ -144,6 +153,22 @@ const ProgrammingExamView = () => {
     try {
       const token = localStorage.getItem('token');
       
+      // 🔒 Validación de seguridad - SIEMPRE bloquear profesores
+      if (token) {
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]));
+          
+          // SIEMPRE bloquear a profesores - no pueden tomar exámenes
+          if (payload.rol === 'professor' || payload.rol === 'system') {
+            setError('Acceso no autorizado: Los profesores no pueden tomar exámenes');
+            setLoading(false);
+            return;
+          }
+        } catch (err) {
+          console.error('Error validando token:', err);
+        }
+      }
+      
       // Verificar si ya existe un intento
       const checkResponse = await fetch(`${API_BASE_URL}/exam-attempts/check/${examId}?windowId=${windowId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -161,6 +186,10 @@ const ProgrammingExamView = () => {
         
         // Si el intento ya está finalizado, redirigir a resultados
         if (existingAttempt.estado === 'finalizado') {
+          // Limpiar windowId del sessionStorage
+          const examKey = `exam_${examId}_windowId`;
+          sessionStorage.removeItem(examKey);
+          
           navigate(`/exam-attempts/${existingAttempt.id}/results`);
           return;
         }
@@ -374,6 +403,10 @@ const ProgrammingExamView = () => {
         })
       });
 
+      // Limpiar windowId del sessionStorage al completar el examen
+      const examKey = `exam_${examId}_windowId`;
+      sessionStorage.removeItem(examKey);
+
       // Manejar cierre según si está en SEB o no
       if (isInSEB) {
         closeSEB();
@@ -389,6 +422,33 @@ const ProgrammingExamView = () => {
 
   // Efecto para cargar datos iniciales
   useEffect(() => {
+    // 🔒 Validación de seguridad - SIEMPRE bloquear profesores
+    const token = localStorage.getItem('token');
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        
+        // SIEMPRE bloquear a profesores y system - no pueden tomar exámenes
+        if (payload.rol === 'professor' || payload.rol === 'system') {
+          setError('Acceso no autorizado: Los profesores no pueden tomar exámenes');
+          setLoading(false);
+          return;
+        }
+        
+        // Bloquear a estudiantes sin windowId válido
+        if (payload.rol === 'student' && !windowId) {
+          setError('Acceso no autorizado: Debes acceder desde tus inscripciones');
+          setLoading(false);
+          return;
+        }
+      } catch (err) {
+        console.error('Error validando token:', err);
+        setError('Token inválido');
+        setLoading(false);
+        return;
+      }
+    }
+    
     const loadData = async () => {
       setLoading(true);
       await fetchExam();
@@ -397,7 +457,7 @@ const ProgrammingExamView = () => {
     };
     
     loadData();
-  }, [fetchExam, fetchOrCreateAttempt]);
+  }, [fetchExam, fetchOrCreateAttempt, windowId]);
 
   // Efecto para cargar archivos cuando el examen esté listo
   useEffect(() => {
@@ -774,7 +834,12 @@ const ProgrammingExamView = () => {
           <p>{error}</p>
           <button 
             className="btn btn-outline-danger" 
-            onClick={() => navigate('/student-exam')}
+            onClick={() => {
+              // Limpiar windowId del sessionStorage
+              const examKey = `exam_${examId}_windowId`;
+              sessionStorage.removeItem(examKey);
+              navigate('/student-exam');
+            }}
           >
             Volver al inicio
           </button>
@@ -1134,6 +1199,7 @@ const ProgrammingExamView = () => {
                         onChange={handleEditorChange}
                         options={{
                           ...editorOptions,
+                          readOnly: saving || fileOperationLoading,
                           quickSuggestions: exam.intellisenseHabilitado,
                           suggestOnTriggerCharacters: exam.intellisenseHabilitado,
                           acceptSuggestionOnEnter: exam.intellisenseHabilitado ? 'on' : 'off',
@@ -1154,6 +1220,7 @@ const ProgrammingExamView = () => {
                         placeholder={`Ejemplo:\n2\n3`}
                         value={userInput}
                         onChange={(e) => setUserInput(e.target.value)}
+                        disabled={saving || isCompiling}
                         rows="3"
                       />
                       <small className="input-hint">
@@ -1254,6 +1321,7 @@ const ProgrammingExamView = () => {
                               placeholder={`Ingresa los datos aquí...\n\nEjemplo:\n2\n3`}
                               value={userInput}
                               onChange={(e) => setUserInput(e.target.value)}
+                              disabled={saving || isCompiling}
                             />
                             <div className="mobile-input-hint">
                               <i className="fas fa-info-circle me-1"></i>

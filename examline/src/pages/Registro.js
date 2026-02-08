@@ -160,6 +160,7 @@ const Registro = () => {
                     setNombre(e.target.value);
                     setNombreError(validateName(e.target.value));
                   }}
+                  disabled={isLoading || isOnCooldown}
                   style={{
                     padding: '0.6rem 0.8rem',
                     border: '1px solid var(--border-color)',
@@ -189,6 +190,7 @@ const Registro = () => {
                     setEmail(e.target.value);
                     setEmailError(validateEmail(e.target.value));
                   }}
+                  disabled={isLoading || isOnCooldown}
                   style={{
                     padding: '0.6rem 0.8rem',
                     border: '1px solid var(--border-color)',
@@ -233,6 +235,7 @@ const Registro = () => {
                     setPassword(e.target.value);
                     setPasswordError(validatePassword(e.target.value));
                   }}
+                  disabled={isLoading || isOnCooldown}
                   style={{
                     padding: '0.6rem 0.8rem',
                     border: '1px solid var(--border-color)',
@@ -269,6 +272,7 @@ const Registro = () => {
                         id="isProfessor"
                         checked={isProfessor}
                         onChange={() => setIsProfessor(!isProfessor)}
+                        disabled={isLoading || isOnCooldown}
                         style={{ transform: 'scale(1.1)' }}
                       />
                       <label className="form-check-label" htmlFor="isProfessor" style={{ fontSize: '0.9rem', fontWeight: '500' }}>

@@ -1074,6 +1074,7 @@ export default function ManualGradingModal({ attemptId, onClose, onSave }) {
                   value={calificacionManual}
                   onChange={(e) => setCalificacionManual(e.target.value)}
                   placeholder="Ingrese la calificación..."
+                  disabled={saving}
                 />
                 {attempt && attempt.puntaje !== null && (
                   <div className="mt-2">
