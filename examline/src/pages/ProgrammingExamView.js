@@ -60,9 +60,18 @@ const ProgrammingExamView = () => {
   // 🔄 Estado para alternar entre vista de entrada/salida en móviles
   const [mobileTerminalView, setMobileTerminalView] = useState('output'); // 'input' | 'output'
 
-  // Obtener windowId de la URL
+  // Obtener windowId de la URL o del sessionStorage
   const searchParams = new URLSearchParams(location.search);
-  const windowId = searchParams.get('windowId');
+  const windowIdFromUrl = searchParams.get('windowId');
+  const examKey = `exam_${examId}_windowId`;
+  
+  // Si hay windowId en la URL, guardarlo en sessionStorage
+  if (windowIdFromUrl) {
+    sessionStorage.setItem(examKey, windowIdFromUrl);
+  }
+  
+  // Usar windowId de la URL o recuperarlo de sessionStorage
+  const windowId = windowIdFromUrl || sessionStorage.getItem(examKey);
 
   // 🔒 Función para obtener el nombre del archivo principal según el lenguaje
   const getMainFileName = useCallback(() => {
@@ -161,6 +170,10 @@ const ProgrammingExamView = () => {
         
         // Si el intento ya está finalizado, redirigir a resultados
         if (existingAttempt.estado === 'finalizado') {
+          // Limpiar windowId del sessionStorage
+          const examKey = `exam_${examId}_windowId`;
+          sessionStorage.removeItem(examKey);
+          
           navigate(`/exam-attempts/${existingAttempt.id}/results`);
           return;
         }
@@ -373,6 +386,10 @@ const ProgrammingExamView = () => {
           codigoProgramacion: mainFileContent
         })
       });
+
+      // Limpiar windowId del sessionStorage al completar el examen
+      const examKey = `exam_${examId}_windowId`;
+      sessionStorage.removeItem(examKey);
 
       // Manejar cierre según si está en SEB o no
       if (isInSEB) {
@@ -774,7 +791,12 @@ const ProgrammingExamView = () => {
           <p>{error}</p>
           <button 
             className="btn btn-outline-danger" 
-            onClick={() => navigate('/student-exam')}
+            onClick={() => {
+              // Limpiar windowId del sessionStorage
+              const examKey = `exam_${examId}_windowId`;
+              sessionStorage.removeItem(examKey);
+              navigate('/student-exam');
+            }}
           >
             Volver al inicio
           </button>

@@ -1085,7 +1085,7 @@ export default function ExamWindowsPage() {
                                     setFormData(prev => ({
                                       ...prev,
                                       usaSEB: useSEB,
-                                      kioskMode: useSEB ? prev.kioskMode : 0 // Desactivar kiosko si se desactiva SEB
+                                      kioskMode: useSEB ? 1 : 0 // Activar pantalla completa automáticamente con SEB
                                     }));
                                   }}
                                   disabled={isSavingWindow || (!!editingWindow && editingWindow.estado === 'en_curso')}
@@ -1104,7 +1104,7 @@ export default function ExamWindowsPage() {
                                 </label>
                                 <div style={{ fontSize: '0.85rem', color: '#6c757d', marginTop: '0.25rem' }}>
                                   {formData.usaSEB 
-                                    ? 'Los estudiantes deberán usar Safe Exam Browser para acceder a esta ventana'
+                                    ? 'Los estudiantes deberán usar Safe Exam Browser en modo pantalla completa'
                                     : 'Los estudiantes podrán acceder usando cualquier navegador web'
                                   }
                                 </div>
@@ -1117,57 +1117,6 @@ export default function ExamWindowsPage() {
                         </div>
                       </div>
                     </div>
-
-                    {/* Toggle para modo kiosco - Solo visible cuando SEB está activado */}
-                    {formData.usaSEB && (
-                      <div className="mb-4">
-                        <div className="card" style={{ 
-                          backgroundColor: formData.kioskMode ? '#f0f4ff' : '#f8f9fa', 
-                          borderColor: formData.kioskMode ? '#28a745' : '#e9ecef',
-                          borderWidth: '2px',
-                          transition: 'all 0.3s ease'
-                        }}>
-                          <div className="card-body p-3">
-                            <div className="d-flex align-items-center justify-content-between">
-                              <div className="d-flex align-items-center">
-                                <div className="form-check form-switch me-3">
-                                  <input 
-                                    className="form-check-input" 
-                                    type="checkbox" 
-                                    id="kioskMode"
-                                    name="kioskMode"
-                                    checked={formData.kioskMode ? true : false}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, kioskMode: e.target.checked ? 1 : 0 }))}
-                                    disabled={isSavingWindow || (!!editingWindow && editingWindow.estado === 'en_curso')}
-                                    style={{ 
-                                      width: '3rem', 
-                                      height: '1.5rem',
-                                      backgroundColor: formData.kioskMode ? '#28a745' : '#6c757d',
-                                      borderColor: formData.kioskMode ? '#28a745' : '#6c757d'
-                                    }}
-                                  />
-                                </div>
-                                <div>
-                                  <label className="form-check-label mb-0" htmlFor="kioskMode" style={{ fontWeight: '600', fontSize: '1rem', cursor: 'pointer' }}>
-                                    <i className={`fas ${formData.kioskMode ? 'fa-desktop text-primary' : 'fa-laptop text-secondary'} me-2`}></i>
-                                    {formData.kioskMode ? 'Modo Pantalla Completa activado' : 'Modo Normal'}
-                                  </label>
-                                  <div style={{ fontSize: '0.85rem', color: '#6c757d', marginTop: '0.25rem' }}>
-                                    {formData.kioskMode 
-                                      ? 'SEB se ejecutará en modo pantalla completa, sin barra de tareas'
-                                      : 'SEB se ejecutará en modo pantalla normal, permitiendo al alumno ver la barra de tareas'
-                                    }
-                                  </div>
-                                </div>
-                              </div>
-                              <div style={{ fontSize: '2rem', opacity: 0.3 }}>
-                                <i className={`fas ${formData.kioskMode ? 'fa-desktop' : 'fa-laptop'}`}></i>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
 
                     {/* Toggle para tipo de ventana */}
                     <div className="mb-4">

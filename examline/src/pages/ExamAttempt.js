@@ -11,7 +11,18 @@ const ExamAttempt = ({ examId: propExamId, onBack }) => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const examId = propExamId || routeExamId;
-  const windowId = searchParams.get('windowId');
+  
+  // Obtener windowId de la URL o del sessionStorage
+  const windowIdFromUrl = searchParams.get('windowId');
+  const examKey = `exam_${examId}_windowId`;
+  
+  // Si hay windowId en la URL, guardarlo en sessionStorage
+  if (windowIdFromUrl) {
+    sessionStorage.setItem(examKey, windowIdFromUrl);
+  }
+  
+  // Usar windowId de la URL o recuperarlo de sessionStorage
+  const windowId = windowIdFromUrl || sessionStorage.getItem(examKey);
 
   const [exam, setExam] = useState(null);
   const [attempt, setAttempt] = useState(null);
@@ -50,6 +61,10 @@ const ExamAttempt = ({ examId: propExamId, onBack }) => {
 
   // Handle back navigation for errors only
   const handleErrorBack = async () => {
+    // Limpiar windowId del sessionStorage
+    const examKey = `exam_${examId}_windowId`;
+    sessionStorage.removeItem(examKey);
+    
     if (isInSEB) {
       // Intentar cerrar SEB automáticamente
       const closed = await tryCloseSEB();
@@ -70,6 +85,10 @@ const ExamAttempt = ({ examId: propExamId, onBack }) => {
   // Handle exam completion - finish attempt and return
   const handleExamCompletion = () => {
     if (!attempt) {
+      // Limpiar windowId del sessionStorage
+      const examKey = `exam_${examId}_windowId`;
+      sessionStorage.removeItem(examKey);
+      
       // Si no hay intento, navegar directamente
       if (onBack) {
         onBack();
@@ -133,6 +152,10 @@ const ExamAttempt = ({ examId: propExamId, onBack }) => {
           });
 
           if (response.ok) {
+            // Limpiar windowId del sessionStorage al completar el examen
+            const examKey = `exam_${examId}_windowId`;
+            sessionStorage.removeItem(examKey);
+            
             // Redirigir directamente sin modal de éxito
             closeModal();
             
@@ -186,6 +209,10 @@ const ExamAttempt = ({ examId: propExamId, onBack }) => {
       'Salir del Examen',
       '¿Estás seguro de que quieres salir del examen? Se perderá todo tu progreso y no podrás volver a intentarlo.',
       async () => {
+        // Limpiar windowId del sessionStorage
+        const examKey = `exam_${examId}_windowId`;
+        sessionStorage.removeItem(examKey);
+        
         closeModal();
         
         if (isInSEB) {
