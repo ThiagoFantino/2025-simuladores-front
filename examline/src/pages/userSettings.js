@@ -168,9 +168,18 @@ export default function UserSettingsPage() {
           
           if (!res.ok) throw new Error("Error eliminando usuario");
 
-          closeModal();
-          logout();
-          navigate("/login");
+          // MOSTRAR CARTEL DE ÉXITO
+          showModal(
+            'success',
+            'Cuenta eliminada',
+            'Tu cuenta fue eliminada correctamente.',
+            () => {
+              closeModal();
+              logout();
+              navigate('/login');
+            }
+          );
+          
         } catch (err) {
           console.error("Error eliminando usuario", err);
           setModal(prev => ({ ...prev, isProcessing: false }));

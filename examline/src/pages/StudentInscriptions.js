@@ -355,46 +355,52 @@ const openExam = async (examId, windowId, token, window) => {
     }, 100);
   };
 
-  const handleInscription = (window) => {
-    // Generar mensaje apropiado según si es ventana eterna o no
-    const mensaje = window.sinTiempo 
-      ? `¿Deseas inscribirte al examen "${window.nombre}"? Esta ventana está disponible permanentemente.`
-      : `¿Deseas inscribirte al examen "${window.nombre}" programado para el ${new Date(window.fechaInicio).toLocaleString()}?`;
+const handleInscription = (window) => {
+  const mensaje = window.sinTiempo 
+    ? `¿Deseas inscribirte al examen "${window.nombre}"? Esta ventana está disponible permanentemente.`
+    : `¿Deseas inscribirte al examen "${window.nombre}" programado para el ${new Date(window.fechaInicio).toLocaleString()}?`;
 
-    showModal(
-      'confirm',
-      'Confirmar Inscripción',
-      mensaje,
-      async () => {
-        try {
-          setModalProcessing(true);
-          const response = await fetch(`${API_BASE_URL}/inscriptions`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ examWindowId: window.id })
-          });
+  showModal(
+    'confirm',
+    'Confirmar Inscripción',
+    mensaje,
+    async () => {
+      try {
+        setModalProcessing(true);
 
-          if (response.ok) {
-            showModal('success', '¡Éxito!', 'Te has inscrito correctamente al examen');
-            loadData(); // Recargar ambas listas
-          } else {
-            const errorData = await response.json();
-            showModal('error', 'Error', errorData.error || 'Error al inscribirse');
-          }
-        } catch (error) {
-          console.error('Error en inscripción:', error);
-          showModal('error', 'Error', 'Error de conexión');
-        } finally {
-          setModalProcessing(false);
+        const response = await fetch(`${API_BASE_URL}/inscriptions`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ examWindowId: window.id })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          // 🔴 ERROR → mostrar modal y NO cerrar
+          showModal('error', 'Error', data.error || 'Error al inscribirse');
+          return;
         }
-        closeModal();
-      },
-      true
-    );
-  };
+
+        // ✅ ÉXITO
+        showModal('success', '¡Éxito!', 'Te has inscrito correctamente al examen');
+        loadData();
+        closeModal(); // ✅ solo en éxito
+
+      } catch (error) {
+        console.error('Error en inscripción:', error);
+        showModal('error', 'Error', 'Error de conexión');
+      } finally {
+        setModalProcessing(false);
+      }
+    },
+    true
+  );
+};
+
 
   const handleCancelInscription = (inscription) => {
     const windowStart = new Date(inscription.examWindow.fechaInicio);

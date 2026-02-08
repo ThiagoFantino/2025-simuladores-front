@@ -51,13 +51,10 @@ const Modal = ({
   };
 
   const handleBackdropClick = (e) => {
-    // No permitir cerrar el modal durante procesamiento
-    if (isProcessing) return;
-    
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
+  e.stopPropagation();
+  return;
   };
+
 
   return (
     <>
