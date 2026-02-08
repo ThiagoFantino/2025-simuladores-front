@@ -87,20 +87,6 @@ export async function getCurrentUser() {
   }
 }
 
-// User management endpoints
-export async function getAllUsers() {
-  try {
-    const res = await fetch(`${API_BASE_URL}/users`, {
-      method: "GET",
-      headers: getAuthHeaders(),
-    });
-
-    return await handleResponse(res);
-  } catch (err) {
-    throw err;
-  }
-}
-
 export async function getUserById(id) {
   try {
     const res = await fetch(`${API_BASE_URL}/users/${id}`, {
