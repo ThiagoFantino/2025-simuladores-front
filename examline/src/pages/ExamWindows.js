@@ -340,10 +340,11 @@ export default function ExamWindowsPage() {
           !Number.isNaN(desiredCupo) &&
           desiredCupo > currentActive &&
           editingWindow.estado === 'cerrada_inscripciones' &&
-          now < startsAt
+          (editingWindow.sinTiempo || now < startsAt)
         ) {
           payload.estado = 'programada';
         }
+
       }
 
       const response = await fetch(url, {

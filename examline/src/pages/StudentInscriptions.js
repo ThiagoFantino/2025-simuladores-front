@@ -18,7 +18,6 @@ export default function StudentInscriptionsPage({
   const [availableWindows, setAvailableWindows] = useState([]);
   const [myInscriptions, setMyInscriptions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isFiltering, setIsFiltering] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
   const [isOnFilterCooldown, setIsOnFilterCooldown] = useState(false);
   const [filteredAvailableWindows, setFilteredAvailableWindows] = useState([]);
@@ -56,7 +55,7 @@ export default function StudentInscriptionsPage({
     }
   }, [token]);
 
-  const filterAvailableWindows = useCallback(() => {
+  useEffect(() => {
     let filtered = [...availableWindows];
 
     if (filters.materia) {
@@ -129,7 +128,7 @@ export default function StudentInscriptionsPage({
     }
   }, [token]);
 
-  const filterMyInscriptions = useCallback(() => {
+ useEffect(() => {
     let filtered = [...myInscriptions];
 
     if (myInscriptionsFilters.materia) {
@@ -300,18 +299,6 @@ const openExam = async (examId, windowId, token, window) => {
     setFilters(prev => ({ ...prev, [name]: value }));
   };
 
-  const applyFilters = () => {
-    if (isFiltering || isOnFilterCooldown) return;
-    
-    setIsFiltering(true);
-    filterAvailableWindows();
-    setTimeout(() => {
-      setIsFiltering(false);
-      setIsOnFilterCooldown(true);
-      setTimeout(() => setIsOnFilterCooldown(false), 800);
-    }, 100);
-  };
-
   const clearFilters = () => {
     if (isClearing || isOnFilterCooldown) return;
     
@@ -328,18 +315,6 @@ const openExam = async (examId, windowId, token, window) => {
   const handleMyInscriptionsFilterChange = (e) => {
     const { name, value } = e.target;
     setMyInscriptionsFilters(prev => ({ ...prev, [name]: value }));
-  };
-
-  const applyMyInscriptionsFilters = () => {
-    if (isFiltering || isOnFilterCooldown) return;
-    
-    setIsFiltering(true);
-    filterMyInscriptions();
-    setTimeout(() => {
-      setIsFiltering(false);
-      setIsOnFilterCooldown(true);
-      setTimeout(() => setIsOnFilterCooldown(false), 800);
-    }, 100);
   };
 
   const clearMyInscriptionsFilters = () => {
@@ -593,50 +568,14 @@ const handleInscription = (window) => {
                   />
                 </div>
                 <div className="col-lg-4 col-md-12 d-flex align-items-end gap-2 student-filters-actions">
-                  <button 
-                    className="modern-btn modern-btn-primary flex-fill"
-                    onClick={applyFilters}
-                    disabled={isFiltering || isClearing || isOnFilterCooldown}
-                  >
-                    {isFiltering ? (
-                      <>
-                        <div className="modern-spinner" style={{ width: "12px", height: "12px", marginRight: "0.5rem" }}></div>
-                        <span className="btn-text">Filtrando...</span>
-                      </>
-                    ) : isOnFilterCooldown ? (
-                      <>
-                        <i className="fas fa-clock me-2"></i>
-                        <span className="btn-text">Espera...</span>
-                      </>
-                    ) : (
-                      <>
-                        <i className="fas fa-search me-2"></i>
-                        <span className="btn-text">Filtrar</span>
-                      </>
-                    )}
-                  </button>
-                  <button 
+                  <button
                     className="modern-btn modern-btn-secondary flex-fill"
-                    onClick={clearFilters}
-                    disabled={isFiltering || isClearing || isOnFilterCooldown}
+                    onClick={() => setFilters({ materia: '', profesor: '', fecha: '', windowId: '' })}
                   >
-                    {isClearing ? (
-                      <>
-                        <div className="modern-spinner" style={{ width: "12px", height: "12px", marginRight: "0.5rem" }}></div>
-                        <span className="btn-text">Limpiando...</span>
-                      </>
-                    ) : isOnFilterCooldown ? (
-                      <>
-                        <i className="fas fa-clock me-2"></i>
-                        <span className="btn-text">Espera...</span>
-                      </>
-                    ) : (
-                      <>
-                        <i className="fas fa-times me-2"></i>
-                        <span className="btn-text">Limpiar</span>
-                      </>
-                    )}
+                    <i className="fas fa-times me-2"></i>
+                    Limpiar Filtros
                   </button>
+
                 </div>
               </div>
             </div>
@@ -668,7 +607,7 @@ const handleInscription = (window) => {
                 disabled={isClearing || isOnFilterCooldown}
               >
                 <i className="fas fa-times me-2"></i>
-                Limpiar filtros
+                Limpiar Filtros
               </button>
             </div>
           ) : (
@@ -856,50 +795,16 @@ const handleInscription = (window) => {
                   />
                 </div>
                 <div className="col-lg-4 col-md-12 d-flex align-items-end gap-2 student-filters-actions">
-                  <button 
-                    className="modern-btn modern-btn-primary flex-fill"
-                    onClick={applyMyInscriptionsFilters}
-                    disabled={isFiltering || isClearing || isOnFilterCooldown}
-                  >
-                    {isFiltering ? (
-                      <>
-                        <div className="modern-spinner" style={{ width: "12px", height: "12px", marginRight: "0.5rem" }}></div>
-                        <span className="btn-text">Filtrando...</span>
-                      </>
-                    ) : isOnFilterCooldown ? (
-                      <>
-                        <i className="fas fa-clock me-2"></i>
-                        <span className="btn-text">Espera...</span>
-                      </>
-                    ) : (
-                      <>
-                        <i className="fas fa-search me-2"></i>
-                        <span className="btn-text">Filtrar</span>
-                      </>
-                    )}
-                  </button>
-                  <button 
+                  <button
                     className="modern-btn modern-btn-secondary flex-fill"
-                    onClick={clearMyInscriptionsFilters}
-                    disabled={isFiltering || isClearing || isOnFilterCooldown}
+                    onClick={() =>
+                      setMyInscriptionsFilters({ materia: '', profesor: '', fecha: '', windowId: '' })
+                    }
                   >
-                    {isClearing ? (
-                      <>
-                        <div className="modern-spinner" style={{ width: "12px", height: "12px", marginRight: "0.5rem" }}></div>
-                        <span className="btn-text">Limpiando...</span>
-                      </>
-                    ) : isOnFilterCooldown ? (
-                      <>
-                        <i className="fas fa-clock me-2"></i>
-                        <span className="btn-text">Espera...</span>
-                      </>
-                    ) : (
-                      <>
-                        <i className="fas fa-times me-2"></i>
-                        <span className="btn-text">Limpiar</span>
-                      </>
-                    )}
+                    <i className="fas fa-times me-2"></i>
+                    Limpiar Filtros
                   </button>
+
                 </div>
               </div>
             </div>
@@ -937,7 +842,7 @@ const handleInscription = (window) => {
                 disabled={isClearing || isOnFilterCooldown}
               >
                 <i className="fas fa-times me-2"></i>
-                Limpiar filtros
+                Limpiar Filtros
               </button>
             </div>
           ) : (
@@ -1015,8 +920,8 @@ const handleInscription = (window) => {
                                 Examen Completado
                               </button>
                               {inscription.examWindow?.notasPublicadas && 
-                               inscription.attempt?.calificacionManual !== null && 
-                               inscription.attempt?.calificacionManual !== undefined && (
+                              inscription.attempt?.calificacionManual !== null && 
+                              inscription.attempt?.calificacionManual !== undefined && (
                                 <div className="alert alert-info d-flex align-items-center justify-content-center" style={{
                                   fontSize: '1.1rem',
                                   fontWeight: 'bold',
@@ -1029,6 +934,17 @@ const handleInscription = (window) => {
                                   <span>Nota: {inscription.attempt.calificacionManual.toFixed(2)}</span>
                                 </div>
                               )}
+                            </div>
+                          ) : window.sinTiempo ? (
+                            // Ventana sin tiempo → siempre disponible
+                            <div className="d-grid gap-2">
+                              <button 
+                                className="modern-btn modern-btn-primary w-100"
+                                onClick={() => openExam(window.examId, window.id, token, window)}
+                              >
+                                <i className="fas fa-play me-2"></i>
+                                {window.exam.tipo === 'programming' ? 'Programar' : 'Rendir Examen'}
+                              </button>
                             </div>
                           ) : canTake ? (
                             <div className="d-grid gap-2">
@@ -1056,12 +972,6 @@ const handleInscription = (window) => {
                                 {window.usaSEB && <i className="fas fa-shield-alt ms-2"></i>}
                               </button>
                             </div>
-                          ) : window.sinTiempo ? (
-                            // Para ventanas sin tiempo, mostrar mensaje genérico
-                            <button className="modern-btn modern-btn-warning w-100" disabled>
-                              <i className="fas fa-clock me-2"></i>
-                              No disponible aún
-                            </button>
                           ) : timeStatus.text === 'Finalizado' ? (
                             <button className="modern-btn modern-btn-secondary w-100" disabled>
                               <i className="fas fa-flag-checkered me-2"></i>
@@ -1082,6 +992,7 @@ const handleInscription = (window) => {
                               Cancelar Inscripción
                             </button>
                           )}
+
                         </div>
                       </div>
                     </div>
