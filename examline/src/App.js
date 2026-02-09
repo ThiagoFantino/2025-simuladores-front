@@ -95,11 +95,6 @@ function App() {
               <ProgrammingExamView />
            
           } />
-          <Route path="/exam-results/:attemptId" element={
-            <StudentRoute>
-              <ExamResults />
-            </StudentRoute>
-          } />
           <Route path="/exam-windows" element={
             <ProfessorRoute>
               <ExamWindows />
