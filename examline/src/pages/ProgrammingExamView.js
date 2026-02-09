@@ -105,6 +105,34 @@ const ProgrammingExamView = () => {
     
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+    // 🔒 Bloquear retroceso del navegador y advertir sobre salir del examen
+  useEffect(() => {
+    // Función para mostrar modal antes de ir atrás
+    const handlePopState = (e) => {
+      e.preventDefault();
+
+      // Empujar la misma ruta para que no navegue
+      window.history.pushState(null, '', window.location.pathname);
+    };
+
+    // Bloquear retroceso con pushState
+    window.history.pushState(null, '', window.location.pathname);
+    window.addEventListener('popstate', handlePopState);
+
+    // Bloquear cierre de pestaña
+    const handleBeforeUnload = (e) => {
+      e.preventDefault();
+      e.returnValue = '⚠️ Si sales ahora, perderás todo tu progreso en el examen.';
+      return e.returnValue;
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
   
   const editorOptions = {
     selectOnLineNumbers: true,

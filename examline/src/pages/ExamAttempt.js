@@ -30,7 +30,15 @@ const ExamAttempt = ({ examId: propExamId, onBack }) => {
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [respuestas, setRespuestas] = useState({}); // { preguntaIndex: opcionIndex }
-  
+
+  // 🔹 Cargar respuestas guardadas al montar el componente
+  useEffect(() => {
+    const saved = sessionStorage.getItem(`exam_${examId}_respuestas`);
+    if (saved) {
+      setRespuestas(JSON.parse(saved));
+    }
+  }, [examId]);
+
   // Usar hooks personalizados
   const { modal, showModal, closeModal, setModalProcessing } = useModal();
   const { isInSEB, closeSEB, tryCloseSEB } = useSEB();
@@ -164,6 +172,9 @@ const ExamAttempt = ({ examId: propExamId, onBack }) => {
             // Limpiar windowId del sessionStorage al completar el examen
             const examKey = `exam_${examId}_windowId`;
             sessionStorage.removeItem(examKey);
+            
+            // 🔹 Limpiar también las respuestas guardadas
+            sessionStorage.removeItem(`exam_${examId}_respuestas`);
             
             // Redirigir directamente sin modal de éxito
             closeModal();
@@ -506,12 +517,16 @@ const ExamAttempt = ({ examId: propExamId, onBack }) => {
                             className={`exam-option-item ${respuestas[i] === j ? 'selected' : ''}`}
                             onClick={() => {
                               if (!submitting) {
-                                setRespuestas(prev => ({
-                                  ...prev,
-                                  [i]: j
-                                }));
+                                const newRespuestas = { ...respuestas, [i]: j };
+                                setRespuestas(newRespuestas);
+                                
+                                // Guardar inmediatamente en sessionStorage
+                                sessionStorage.setItem(`exam_${examId}_respuestas`, JSON.stringify(newRespuestas));
                               }
                             }}
+
+
+
                             style={{
                               padding: '0.75rem 1rem',
                               marginBottom: '0.5rem',

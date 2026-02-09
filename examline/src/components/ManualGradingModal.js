@@ -1019,9 +1019,9 @@ export default function ManualGradingModal({ attemptId, onClose, onSave }) {
               </div>
               <div className="modern-card-body">
                 {attempt.exam.preguntas.map((pregunta, idx) => {
-                  const respuestaEstudiante = attempt.respuestas[pregunta.id];
+                  const respuestaEstudiante = attempt.respuestas[idx]; // ✅ usar índice
                   const esCorrecta = respuestaEstudiante === pregunta.correcta;
-                  
+
                   return (
                     <div key={pregunta.id} className="mb-3 p-3 border rounded">
                       <div className="d-flex justify-content-between align-items-start mb-2">
@@ -1033,12 +1033,14 @@ export default function ManualGradingModal({ attemptId, onClose, onSave }) {
                       <p className="mb-2">{pregunta.texto}</p>
                       <div className="ms-3">
                         {pregunta.opciones.map((opcion, opIdx) => (
-                          <div 
-                            key={opIdx} 
+                          <div
+                            key={opIdx}
                             className={`p-2 mb-1 rounded ${
-                              opIdx === pregunta.correcta ? 'bg-success bg-opacity-10 border border-success' :
-                              opIdx === respuestaEstudiante ? 'bg-danger bg-opacity-10 border border-danger' :
-                              'bg-light'
+                              opIdx === pregunta.correcta
+                                ? 'bg-success bg-opacity-10 border border-success'
+                                : opIdx === respuestaEstudiante
+                                ? 'bg-danger bg-opacity-10 border border-danger'
+                                : 'bg-light'
                             }`}
                           >
                             {opIdx === pregunta.correcta && <i className="fas fa-check-circle text-success me-2"></i>}
@@ -1051,6 +1053,7 @@ export default function ManualGradingModal({ attemptId, onClose, onSave }) {
                   );
                 })}
               </div>
+
             </div>
           )}
 
