@@ -920,8 +920,8 @@ const handleInscription = (window) => {
                                 Examen Completado
                               </button>
                               {inscription.examWindow?.notasPublicadas && 
-                               inscription.attempt?.calificacionManual !== null && 
-                               inscription.attempt?.calificacionManual !== undefined && (
+                              inscription.attempt?.calificacionManual !== null && 
+                              inscription.attempt?.calificacionManual !== undefined && (
                                 <div className="alert alert-info d-flex align-items-center justify-content-center" style={{
                                   fontSize: '1.1rem',
                                   fontWeight: 'bold',
@@ -934,6 +934,17 @@ const handleInscription = (window) => {
                                   <span>Nota: {inscription.attempt.calificacionManual.toFixed(2)}</span>
                                 </div>
                               )}
+                            </div>
+                          ) : window.sinTiempo ? (
+                            // Ventana sin tiempo → siempre disponible
+                            <div className="d-grid gap-2">
+                              <button 
+                                className="modern-btn modern-btn-primary w-100"
+                                onClick={() => openExam(window.examId, window.id, token, window)}
+                              >
+                                <i className="fas fa-play me-2"></i>
+                                {window.exam.tipo === 'programming' ? 'Programar' : 'Rendir Examen'}
+                              </button>
                             </div>
                           ) : canTake ? (
                             <div className="d-grid gap-2">
@@ -961,12 +972,6 @@ const handleInscription = (window) => {
                                 {window.usaSEB && <i className="fas fa-shield-alt ms-2"></i>}
                               </button>
                             </div>
-                          ) : window.sinTiempo ? (
-                            // Para ventanas sin tiempo, mostrar mensaje genérico
-                            <button className="modern-btn modern-btn-warning w-100" disabled>
-                              <i className="fas fa-clock me-2"></i>
-                              No disponible aún
-                            </button>
                           ) : timeStatus.text === 'Finalizado' ? (
                             <button className="modern-btn modern-btn-secondary w-100" disabled>
                               <i className="fas fa-flag-checkered me-2"></i>
@@ -987,6 +992,7 @@ const handleInscription = (window) => {
                               Cancelar Inscripción
                             </button>
                           )}
+
                         </div>
                       </div>
                     </div>
