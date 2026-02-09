@@ -216,11 +216,28 @@ export default function UserSettingsPage() {
             </div>
             <div className="header-actions-section">
               <div className="d-flex gap-2 flex-wrap justify-content-end">
-                <BackToMainButton className="modern-btn modern-btn-secondary modern-btn-sm" />
-                <button className="modern-btn modern-btn-danger modern-btn-sm" onClick={handleDelete}>
+                <BackToMainButton
+                  className="modern-btn modern-btn-secondary modern-btn-sm"
+                  disabled={isSaving || isOnCooldown || isDeleting}
+                  style={{
+                    pointerEvents: isSaving || isOnCooldown || isDeleting ? 'none' : 'auto',
+                    opacity: isSaving || isOnCooldown || isDeleting ? 0.6 : 1
+                  }}
+                />
+
+                <button
+                  className="modern-btn modern-btn-danger modern-btn-sm"
+                  onClick={handleDelete}
+                  disabled={isSaving || isOnCooldown || isDeleting}
+                  style={{
+                    pointerEvents: isSaving || isOnCooldown || isDeleting ? 'none' : 'auto',
+                    opacity: isSaving || isOnCooldown || isDeleting ? 0.6 : 1
+                  }}
+                >
                   <i className="fas fa-trash me-2"></i>
                   Eliminar cuenta
                 </button>
+
               </div>
             </div>
           </div>
@@ -282,11 +299,17 @@ export default function UserSettingsPage() {
                     type="button"
                     onClick={() => setShowCurrentPassword(!showCurrentPassword)}
                     className="btn btn-link p-0"
-                    style={{ fontSize: '0.85rem' }}
+                    disabled={isSaving || isOnCooldown || isDeleting}
+                    style={{
+                      fontSize: '0.85rem',
+                      pointerEvents: isSaving || isOnCooldown || isDeleting ? 'none' : 'auto',
+                      opacity: isSaving || isOnCooldown || isDeleting ? 0.6 : 1
+                    }}
                   >
                     <i className={`fas ${showCurrentPassword ? "fa-eye-slash" : "fa-eye"} me-1`}></i>
                     {showCurrentPassword ? "Ocultar" : "Mostrar"}
                   </button>
+
                 </div>
                 <input
                   type={showCurrentPassword ? "text" : "password"}
@@ -309,11 +332,17 @@ export default function UserSettingsPage() {
                     type="button"
                     onClick={() => setShowNewPassword(!showNewPassword)}
                     className="btn btn-link p-0"
-                    style={{ fontSize: '0.85rem' }}
+                    disabled={isSaving || isOnCooldown || isDeleting}
+                    style={{
+                      fontSize: '0.85rem',
+                      pointerEvents: isSaving || isOnCooldown || isDeleting ? 'none' : 'auto',
+                      opacity: isSaving || isOnCooldown || isDeleting ? 0.6 : 1
+                    }}
                   >
                     <i className={`fas ${showNewPassword ? "fa-eye-slash" : "fa-eye"} me-1`}></i>
                     {showNewPassword ? "Ocultar" : "Mostrar"}
                   </button>
+
                 </div>
                 <input
                   type={showNewPassword ? "text" : "password"}
