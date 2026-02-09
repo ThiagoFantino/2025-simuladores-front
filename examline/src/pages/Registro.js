@@ -219,7 +219,8 @@ const Registro = () => {
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="btn btn-link p-0"
-                    style={{ fontSize: '0.85rem' }}
+                    disabled={isLoading || isOnCooldown}
+                    style={{ fontSize: '0.85rem', pointerEvents: isLoading || isOnCooldown ? 'none' : 'auto', opacity: isLoading || isOnCooldown ? 0.6 : 1 }}
                   >
                     <i className={`fas ${showPassword ? "fa-eye-slash" : "fa-eye"} me-1`}></i>
                     {showPassword ? "Ocultar" : "Mostrar"}
@@ -317,8 +318,21 @@ const Registro = () => {
               </div>
 
               <p className="mb-0 text-center" style={{ color: 'var(--text-color-1)', fontSize: '0.85rem' }}>
-                ¿Ya tenés cuenta? <Link to="/login" style={{ color: 'var(--primary-color)', textDecoration: 'none', fontWeight: '500' }}>Inicia sesión aquí</Link>
+                ¿Ya tenés cuenta?{" "}
+                {isLoading || isOnCooldown ? (
+                  <span style={{ color: 'gray', cursor: 'not-allowed', fontWeight: '500' }}>
+                    Inicia sesión aquí
+                  </span>
+                ) : (
+                  <Link 
+                    to="/login" 
+                    style={{ color: 'var(--primary-color)', textDecoration: 'none', fontWeight: '500' }}
+                  >
+                    Inicia sesión aquí
+                  </Link>
+                )}
               </p>
+
             </form>
           </div>
         </div>
